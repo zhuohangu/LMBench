@@ -6,12 +6,6 @@ cd 4-latest-results/
 
 echo "Current directory: $(pwd)"
 
-# Ensure jq is installed
-if ! command -v jq &>/dev/null; then
-  echo "jq not found. Installing..."
-  sudo apt update && sudo apt install -y jq
-fi
-
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <values-file.yaml>"
   exit 1
@@ -22,9 +16,6 @@ VALUES_FILE="$1"
 # Add Helm repo if not already added
 helm repo add vllm https://vllm-project.github.io/production-stack || true
 
-# Make sure there is no current port forwarding
-pkill -f "kubectl port-forward"
-
 # Kill any process using port 30080
 if lsof -ti :30080 > /dev/null; then
   echo "⚠️  Port 30080 is already in use. Killing existing process..."
@@ -33,6 +24,13 @@ fi
 
 # Make sure there is no current release
 helm uninstall vllm || true
+
+while true; do
+  if [ $(kubectl get pods | wc -l) -eq 0 ]; then
+    break
+  fi
+  sleep 1
+done
 
 # Install the stack
 helm install vllm vllm/vllm-stack -f "$VALUES_FILE"
