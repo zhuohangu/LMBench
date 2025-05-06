@@ -1,0 +1,46 @@
+# The comments are the currently available options
+
+Infrastructure:
+  Location: Minikube
+  # MiniKube (local clone of this repo)
+  # LMCacheGKE (workflow will run on LMCache GPU runner)
+
+Serving:
+  Baseline: ProductionStack
+  ProductionStack:
+    vLLM-Version: 0
+    useLMCache: false
+    modelURL: meta-llama/Llama-3.1-8B-Instruct
+    replicaCount: 1
+    numGPUs: 1
+    tensorParallelSize: 1
+    hf_token: <YOUR_HF_TOKEN>
+    maxModelLen: 16384
+
+  Baseline: SGLang
+  SGLang:
+    modelURL: meta-llama/Llama-3.1-70B-Instruct
+    hf_token: <YOUR_HF_TOKEN>
+    # TODO
+
+  Baseline: Dynamo
+  Dynamo:
+    # TODO
+
+Workload:
+  ShareGPT
+    LIMIT: 1000
+    MIN_ROUNDS: 10
+    START_ROUND: 0
+    QPS: [1.34, 2]
+
+  LMCacheSynthetic
+    # TODO
+
+  Agentic
+    # TODO
+
+  Mooncake
+    # TODO
+
+

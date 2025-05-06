@@ -1,0 +1,22 @@
+Infrastructure:
+  Location: Minikube
+
+Serving:
+  Baseline: ProductionStack
+  ProductionStack:
+    vLLM-Version: 0
+    useLMCache: true
+    cpuSize: 60
+    modelURL: meta-llama/Llama-3.1-8B-Instruct
+    replicaCount: 1
+    numGPUs: 1
+    tensorParallelSize: 1
+    hf_token: <YOUR_HF_TOKEN>
+    maxModelLen: 16384
+
+Workload:
+  ShareGPT:
+    LIMIT: 100
+    MIN_ROUNDS: 5
+    START_ROUND: 3
+    QPS: [1.34, 2]

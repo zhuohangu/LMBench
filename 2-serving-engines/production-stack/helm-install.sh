@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+# switch to 4-latest-results folder (parent is already in parent of 4-latest-results)
+cd 4-latest-results/
+
+echo "Current directory: $(pwd)"
+
+# Ensure jq is installed
+if ! command -v jq &>/dev/null; then
+  echo "jq not found. Installing..."
+  sudo apt update && sudo apt install -y jq
+fi
+
+if [ $# -ne 1 ]; then
+  echo "Usage: $0 <values-file.yaml>"
+  exit 1
+fi
+
+VALUES_FILE="$1"
+
+# Add Helm repo if not already added
+helm repo add vllm https://vllm-project.github.io/production-stack || true
+
+# Make sure there is no current port forwarding
+pkill -f "kubectl port-forward"
+
+# Kill any process using port 30080
+if lsof -ti :30080 > /dev/null; then
+  echo "⚠️  Port 30080 is already in use. Killing existing process..."
+  kill -9 $(lsof -ti :30080)
+fi
+
+# Make sure there is no current release
+helm uninstall vllm || true
+
+# Install the stack
+helm install vllm vllm/vllm-stack -f "$VALUES_FILE"
+
+# Wait until all vllm pods are ready
+echo "Waiting for all vLLM pods to be ready..."
+while true; do
+  PODS=$(kubectl get pods 2>/dev/null)
+
+  TOTAL=$(echo "$PODS" | tail -n +2 | wc -l)
+  READY=$(echo "$PODS" | grep '1/1' | wc -l)
+
+  if [ "$READY" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
+    echo "✅ All $TOTAL pods are running and ready."
+    break
+  else
+    echo "⏳ $READY/$TOTAL pods ready..."
+    kubectl get pods
+    sleep 5
+  fi
+done
+
+echo "Ready for port forwarding!"
+
+kubectl port-forward svc/vllm-router-service 30080:80 &
+
