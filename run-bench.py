@@ -282,7 +282,7 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
 
     for csv_path in csv_files:
         print(f"Post-processing {csv_path}...")
-        cmd = [str(summarize_script_path), str(csv_path)]
+        cmd = ['python3', str(summarize_script_path), str(csv_path)]
         result = subprocess.run(cmd, check=True)
         if result.returncode == 0:
             print(f"Post-processing completed for {csv_path}")
