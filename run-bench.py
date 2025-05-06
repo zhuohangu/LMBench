@@ -106,11 +106,11 @@ def helm_installation(prodstack_config: Dict[str, Any]) -> None:
     """
     Deploy the router and serving engines through production stack helm installation
     """
-    prodstack_base_name = 'v0-base-production-stack'
-    generated_name = 'v0-generated-production-stack'
+    prodstack_base_name = 'v0-base-production-stack.yaml'
+    generated_name = 'v0-generated-production-stack.yaml'
     if prodstack_config.get('vLLM-Version') == 1:
-        prodstack_base_name = 'v1-base-production-stack'
-        generated_name = 'v1-generated-production-stack'
+        prodstack_base_name = 'v1-base-production-stack.yaml'
+        generated_name = 'v1-generated-production-stack.yaml'
 
     base_yaml_file = Path(__file__).parent / '2-serving-engines' / 'production-stack' / prodstack_base_name
 
@@ -154,8 +154,7 @@ def _override_yaml(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, 
         'cpuSize': lambda v: lmcache_config.update({'cpuOffloadingBufferSize': str(v)}),
     }
 
-    prodstack_config = override.get('Serving', {}).get('ProductionStack', {})
-    for key, val in prodstack_config.items():
+    for key, val in override.items():
         handler = mapping.get(key)
         if handler:
             handler(val)
