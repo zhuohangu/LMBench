@@ -21,6 +21,26 @@ jobs:
           whoami
           echo "Current directory: $(pwd)"
 
+      - name: Check gcloud CLI
+        run: |
+          echo "✅ Checking gcloud installation..."
+          gcloud --version
+
+      - name: Show active gcloud account
+        run: |
+          echo "✅ Checking gcloud auth list..."
+          gcloud auth list
+
+      - name: Show active gcloud project
+        run: |
+          echo "✅ Checking gcloud active project..."
+          gcloud config get-value project
+
+      - name: List Compute Engine instances
+        run: |
+          echo "✅ Listing compute instances..."
+          gcloud compute instances list
+
       - name: Create dummy results
         run: |
           mkdir -p benchmark_results

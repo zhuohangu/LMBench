@@ -43,6 +43,13 @@ while true; do
   TOTAL=$(echo "$PODS" | tail -n +2 | wc -l)
   READY=$(echo "$PODS" | grep '1/1' | wc -l)
 
+  # Check for CrashLoopBackOff or other bad states
+  if echo "$PODS" | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff' > /dev/null; then
+    echo "❌ Detected pod in CrashLoopBackOff / Error / ImagePullBackOff state!"
+    kubectl get pods
+    exit 1
+  fi
+
   if [ "$READY" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
     echo "✅ All $TOTAL pods are running and ready."
     break

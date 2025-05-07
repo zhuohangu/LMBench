@@ -1,11 +1,14 @@
-# The comments are the currently available options
-
 Infrastructure:
+  # Option 1: Minikube (local clone of this repo)
   Location: Minikube
-  # MiniKube (local clone of this repo)
-  # LMCacheGKE (workflow will run on LMCache GPU runner)
+
+  # Option 2: LMCacheGKE (workflow will run on LMCache GPU runner)
+  Location: LMCacheGKE
+  numClusterGPUs: 1
+  # numClusterGPUs: Only 1, 2, 4, 8 (A100 40GB) or 16 (A100 80GB) GPUs are supported.
 
 Serving:
+  # Option 1: ProductionStack
   Baseline: ProductionStack
   ProductionStack:
     vLLM-Version: 0
@@ -17,17 +20,20 @@ Serving:
     hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
+  # Option 2: SGLang
   Baseline: SGLang
   SGLang:
     modelURL: meta-llama/Llama-3.1-70B-Instruct
     hf_token: <YOUR_HF_TOKEN>
     # TODO
 
+  # Option 3: Dynamo
   Baseline: Dynamo
   Dynamo:
     # TODO
 
 Workload:
+  # Multiple workloads can be specified and they will all be run.
   ShareGPT
     LIMIT: 1000
     MIN_ROUNDS: 10

@@ -32,8 +32,7 @@ def setup_infrastructure(config: Dict[str, Any]) -> None:
     if location == 'Minikube':
         minikube_installation(config)
     elif location == 'LMCacheGKE':
-        #TODO
-        pass
+        start_gke_cluster(config)
     else:
         raise ValueError(f"Unsupported infrastructure location: {location}")
 
@@ -55,6 +54,22 @@ def minikube_installation(config: Dict[str, Any]) -> None:
         print("Local minikube environment setup completed successfully")
     else:
         raise RuntimeError("Failed to set up local minikube environment")
+
+def start_gke_cluster(config: Dict[str, Any]) -> None:
+    script_path = Path(__file__).parent / '1-infrastructure' / 'lmcache-gke' / 'run-gke.sh'
+    if not script_path.exists():
+        raise FileNotFoundError(f"GKE cluster setup script not found at {script_path}")
+
+    # Execute the script
+    num_gpus = config['Infrastructure'].get('numClusterGPUs')
+    if not num_gpus:
+        raise ValueError("numClusterGPUs must be specified in bench-spec.yaml for GKE cluster setup")
+    result = subprocess.run([str(script_path), str(num_gpus)], check=True)
+
+    if result.returncode == 0:
+        print("GKE cluster setup completed successfully")
+    else:
+        raise RuntimeError("Failed to set up GKE cluster")
 
 # 2. Baseline Setup
 def setup_baseline(config: Dict[str, Any]) -> None:
