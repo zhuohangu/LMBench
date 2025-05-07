@@ -1,205 +1,33 @@
-#WIP: taken from hanchen's workflow at https://github.com/Hanchenli/token-perf/blob/main/.github/workflows/run_benchmarks.yml right now
-name: Run Serving Benchmarks
+name: Test Self-Hosted Runner
 
-# add to push later
-on: []
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
-  benchmark:
-    runs-on: self-hosted # Ensure runner has bash, find, lsof/ss, kill
+  test-runner:
+    runs-on: self-hosted
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-    - name: Run Serving Benchmarks
-      shell: bash -l {0} # Use login shell for conda
-      env:
-        ENV_HF_TOKEN: ${{ secrets.HF_TOKEN }} # Make secret available as env var
-      run: |
-        # Activate conda env if needed (assuming it's set up on self-hosted runner)
-        # If you have conda setup, uncomment the next line
-        conda activate vllm
-        # echo "Using Python: $(which python)"
+      - name: Show runner info
+        run: |
+          echo "✅ Running on self-hosted runner!"
+          uname -a
+          whoami
+          echo "Current directory: $(pwd)"
 
-        # Check if the secret is actually set
-        if [ -z "$ENV_HF_TOKEN" ]; then
-          echo "::warning:: HF_TOKEN secret is not set. Proceeding without injecting token."
-        fi
+      - name: Create dummy results
+        run: |
+          mkdir -p benchmark_results
+          echo "Hello from self-hosted runner!" > benchmark_results/test_output.txt
 
-        RESULTS_DIR="benchmark_results"
-        BENCHMARKS_DIR="benchmarks"
-        SERVING_DIR="serving"
-        SERVER_PORT=30080 # Port specified by user
-        WAIT_SECONDS=400 # Wait time specified by user
-
-        mkdir -p $RESULTS_DIR
-        echo "Saving results to $RESULTS_DIR"
-
-        # Check base directories
-        if [ ! -d "$SERVING_DIR" ]; then echo "Serving directory '$SERVING_DIR' not found."; exit 1; fi
-        if [ ! -d "$BENCHMARKS_DIR" ]; then echo "Benchmarks directory '$BENCHMARKS_DIR' not found."; exit 1; fi
-
-        # Loop through each immediate subdirectory in the serving directory
-        find "$SERVING_DIR" -mindepth 1 -maxdepth 1 -type d -print0 | while IFS= read -r -d $'\0' serving_folder; do
-          serving_name=$(basename "$serving_folder")
-          start_script="$serving_folder/start.sh"
-          after_start_script="$serving_folder/after_start.sh"
-          cleanup_script="$serving_folder/cleanup.sh"
-          setup_yaml_path="$serving_folder/setup.yaml" # Define path to setup.yaml
-
-          echo "--- Processing Serving Config: $serving_name ---"
-
-          # Check required scripts exist for this serving config
-          if [ ! -f "$start_script" ]; then
-            echo "ERROR: start.sh not found in $serving_folder. Skipping..."
-            continue
-          fi
-          # after_start.sh is optional based on original logic
-          # if [ ! -f "$after_start_script" ]; then ... fi
-
-          # Loop through benchmark scripts
-          find "$BENCHMARKS_DIR" -maxdepth 1 -name '*.sh' -print0 | while IFS= read -r -d $'\0' benchmark_script; do
-            benchmark_name=$(basename "$benchmark_script" .sh)
-            result_file="$RESULTS_DIR/result_${serving_name}_${benchmark_name}.log"
-
-            echo "--- Starting Benchmark: $benchmark_name for Serving: $serving_name ---"
-
-            # Make scripts executable just in case
-            chmod +x "$start_script" "$after_start_script" "$benchmark_script" "$cleanup_script" 2>/dev/null || true
-
-            # --- Inject HF Token into Setup.yaml ---
-            if [ -f "$setup_yaml_path" ]; then
-              if [ -n "$ENV_HF_TOKEN" ]; then
-                echo "Injecting HF token into $setup_yaml_path"
-                # Check if file ends with newline, add one if not, to prevent issues
-                [[ $(tail -c1 "$setup_yaml_path" | wc -l) -eq 0 ]] && echo >> "$setup_yaml_path"
-                # Append the token key-value pair
-                echo "    hf_token: $ENV_HF_TOKEN" >> "$setup_yaml_path"
-              else
-                 echo "Skipping token injection: HF_TOKEN secret not set."
-              fi
-            else
-              echo "WARNING: $setup_yaml_path not found. Cannot inject token."
-            fi
-
-            # --- Start Server ---
-            echo "Running start script: $start_script from within $serving_folder"
-            # --- Ensure Port is Free Before Starting ---
-            echo "Checking if port $SERVER_PORT is in use and terminating if necessary..."
-            # Find PID listening on the specified TCP port
-            EXISTING_PID=$(lsof -t -i TCP:$SERVER_PORT -s TCP:LISTEN)
-
-            if [ -n "$EXISTING_PID" ]; then
-              echo "Port $SERVER_PORT is currently in use by PID $EXISTING_PID. Attempting to terminate..."
-              # Force kill the process using the port
-              kill -9 $EXISTING_PID 2>/dev/null || true # Use kill -9 for forceful termination, ignore error if already gone
-              sleep 2 # Give a brief moment for the OS to release the port
-              echo "Termination signal sent to PID $EXISTING_PID."
-            else
-              echo "Port $SERVER_PORT appears to be free."
-            fi
-            # --- End Ensure Port is Free ---
-
-            (cd "$serving_folder" && bash ./start.sh &)
-            # Give it a moment to potentially launch the real process
-            sleep 5
-
-            # --- Wait ---
-            echo "Waiting $WAIT_SECONDS seconds for server to get ready..."
-            sleep $WAIT_SECONDS
-
-            # --- Run After Start Script ---
-            # Check if after_start_script exists before running
-            if [ -f "$after_start_script" ]; then
-              echo "Running after_start script in background: $after_start_script"
-              bash "$after_start_script" &
-              AFTER_START_PID=$!
-              echo "after_start.sh running in background (PID: $AFTER_START_PID)"
-            else
-              echo "INFO: after_start.sh not found in $serving_folder. Skipping."
-            fi
-
-            # --- Run Benchmark ---
-            echo "Running benchmark script: $benchmark_script"
-            echo "Saving results to: $result_file"
-            if bash "$benchmark_script" > "$result_file" 2>&1; then
-              echo "Benchmark '$benchmark_name' finished successfully."
-            else
-              echo "Benchmark '$benchmark_name' FAILED. Check log: $result_file"
-              # Decide if workflow should fail: exit 1
-            fi
-
-            # --- Stop Server (using cleanup script or port kill) ---
-            if [ -f "$cleanup_script" ]; then
-              echo "Running cleanup script: $cleanup_script"
-              bash "$cleanup_script"
-              echo "Cleanup script finished."
-              sleep 5 # Give some time for resources to release
-            else
-              echo "WARNING: cleanup.sh not found in $serving_folder. Attempting generic process kill on port $SERVER_PORT..."
-              # Fallback to previous PID kill logic if cleanup.sh is missing
-              SERVER_PID=$(lsof -t -i TCP:$SERVER_PORT -s TCP:LISTEN)
-              if [ -z "$SERVER_PID" ]; then
-                SERVER_PID=$(ss -tulnp | grep "LISTEN" | grep ":$SERVER_PORT" | sed -E 's/.*pid=([0-9]+),.*/\1/' | head -n 1)
-              fi
-              if [ -n "$SERVER_PID" ]; then
-                  echo "Found server process with PID $SERVER_PID. Stopping..."
-                  kill $SERVER_PID 2>/dev/null || true
-                  sleep 2
-                  if ps -p $SERVER_PID > /dev/null; then
-                      echo "Process $SERVER_PID still alive, forcing kill..."
-                      kill -9 $SERVER_PID 2>/dev/null || true
-                  else
-                      echo "Process $SERVER_PID terminated gracefully."
-                  fi
-                  sleep 2 # Give time for port to release
-              else
-                  echo "WARNING: Could not find a process listening on port $SERVER_PORT to kill (and no cleanup.sh found)."
-              fi
-            fi
-
-            # --- Remove HF Token from Setup.yaml ---
-            if [ -f "$setup_yaml_path" ]; then
-              if [ -n "$ENV_HF_TOKEN" ]; then
-                echo "Removing HF token line from $setup_yaml_path"
-                # Use sed to delete the line starting with 'hf_token:'.
-                # -i needs empty arg '' for macOS compatibility if runner changes, but self-hosted is likely Linux.
-                sed -i '/^hf_token:/d' "$setup_yaml_path"
-              fi
-            fi
-
-            echo "--- Finished Benchmark: $benchmark_name for Serving: $serving_name ---"
-            echo ""
-
-          done
-
-          echo "--- Finished Processing Serving Config: $serving_name ---"
-          echo ""
-
-        done # End serving folder loop
-
-        echo "All benchmark runs completed."
-
-    # Removed the explicit 'zip' step
-
-    - name: Upload benchmark results artifact
-      if: always() # Run even if previous steps fail
-      uses: actions/upload-artifact@v4
-      with:
-        name: benchmark-results # Name of the artifact zip file (this name is just for the artifact label)
-        path: benchmark_results/ # Path to the directory to upload
-        if-no-files-found: warn # Warn if no files found, instead of ignoring
-
-    - name: Clean up # Keep existing cleanup
-      if: always()
-      run: |
-        # Remove any temporary files
-        find . -name "*.tmp" -type f -delete
-
-        # Clean up vllm clone (if it exists from previous versions/steps)
-        if [ -d "vllm" ]; then
-          echo "Removing cloned vllm directory"
-          rm -rf vllm
-        fi
-
-        echo "Cleanup completed successfully"
+      - name: Upload dummy artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-artifact
+          path: benchmark_results/
