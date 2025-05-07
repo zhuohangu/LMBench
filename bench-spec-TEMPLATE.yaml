@@ -6,6 +6,11 @@ Infrastructure:
   Location: LMCacheGKE
   numClusterGPUs: 1
   # numClusterGPUs: Only 1, 2, 4, 8 (A100 40GB) or 16 (A100 80GB) GPUs are supported.
+  # 1 GPU -> 12 vCPUs, 85GB memory
+  # 2 GPUs -> 24 vCPUs, 170GB memory
+  # 4 GPUs -> 48 vCPUs, 340GB memory
+  # 8 GPUs -> 96 vCPUs, 680GB memory
+  # 16 GPUs -> 128 vCPUs, 1920GB memory
 
 Serving:
   # Option 1: ProductionStack

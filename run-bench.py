@@ -60,6 +60,9 @@ def start_gke_cluster(config: Dict[str, Any]) -> None:
     if not script_path.exists():
         raise FileNotFoundError(f"GKE cluster setup script not found at {script_path}")
 
+    # add execution permission
+    os.chmod(script_path, 0o755)
+
     # Execute the script
     num_gpus = config['Infrastructure'].get('numClusterGPUs')
     if not num_gpus:
@@ -163,6 +166,7 @@ def _override_yaml(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, 
         'replicaCount': lambda v: model_spec.update({'replicaCount': v}),
         'hf_token': lambda v: model_spec.update({'hf_token': v}),
         'numGPUs': lambda v: model_spec.update({'requestGPU': v}),
+        'numCPUs': lambda v: model_spec.update({'requestCPU': v}),
         'maxModelLen': lambda v: vllm_config.update({'maxModelLen': v}),
         'tensorParallelSize': lambda v: vllm_config.update({'tensorParallelSize': v}),
         'useLMCache': lambda v: lmcache_config.update({'enabled': bool(v)}),

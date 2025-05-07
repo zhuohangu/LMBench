@@ -9,59 +9,49 @@ fi
 NUM_GPUS=$1
 
 CLUSTER_NAME="lm-bench"
-# this is a zone that has nvidia-a100-80gb GPUs
+NODE_POOL_NAME="gpu-pool"
 ZONE="us-central1-a"
-# Get the current GCP project ID
 GCP_PROJECT=$(gcloud config get-value project)
 
-# Ensure the project ID is retrieved correctly
 if [ -z "$GCP_PROJECT" ]; then
   echo "Error: No GCP project ID found. Please set your project with 'gcloud config set project <PROJECT_ID>'."
   exit 1
 fi
 
-# Choose the correct machine type and accelerator type based on GPU count
+# Choose machine type and accelerator
 if [ "$NUM_GPUS" -eq 1 ]; then
-  MACHINE_TYPE="a2-highgpu-1g"
+  MACHINE_TYPE="a2-highgpu-1g" # 12 vCPUs, 85GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 2 ]; then
-  MACHINE_TYPE="a2-highgpu-2g"
+  MACHINE_TYPE="a2-highgpu-2g" # 24 vCPUs, 170GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 4 ]; then
-  MACHINE_TYPE="a2-highgpu-4g"
+  MACHINE_TYPE="a2-highgpu-4g" # 48 vCPUs, 340GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 8 ]; then
-  MACHINE_TYPE="a2-highgpu-8g"
+  MACHINE_TYPE="a2-highgpu-8g" # 96 vCPUs, 680GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 16 ]; then
-  MACHINE_TYPE="a2-ultragpu-16g"
+  MACHINE_TYPE="a2-ultragpu-16g" # 128 vCPUs, 1920GB memory
   ACCELERATOR_TYPE="nvidia-a100-80gb"
 else
   echo "Error: Only 1, 2, 4, 8 (A100 40GB) or 16 (A100 80GB) GPUs are supported."
   exit 1
 fi
 
-# Create the GKE cluster
+# Create cluster with no nodes
 gcloud beta container --project "$GCP_PROJECT" clusters create "$CLUSTER_NAME" \
   --zone "$ZONE" \
   --tier "standard" \
   --no-enable-basic-auth \
   --cluster-version "1.32.3-gke.1927000" \
   --release-channel "regular" \
-  --machine-type "$MACHINE_TYPE" \
-  --accelerator type="$ACCELERATOR_TYPE",count="$NUM_GPUS" \
   --image-type "COS_CONTAINERD" \
   --disk-type "pd-balanced" \
   --disk-size "100" \
   --metadata disable-legacy-endpoints=true \
-  --scopes \
-    "https://www.googleapis.com/auth/devstorage.read_only,\
-https://www.googleapis.com/auth/logging.write,\
-https://www.googleapis.com/auth/monitoring,\
-https://www.googleapis.com/auth/servicecontrol,\
-https://www.googleapis.com/auth/service.management.readonly,\
-https://www.googleapis.com/auth/trace.append" \
-  --max-pods-per-node "110" \
+  --scopes "https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append" \
+  --machine-type "e2-medium" \
   --num-nodes "1" \
   --logging=SYSTEM,WORKLOAD \
   --monitoring=SYSTEM,STORAGE,POD,DEPLOYMENT,STATEFULSET,DAEMONSET,HPA,CADVISOR,KUBELET \
@@ -84,3 +74,22 @@ https://www.googleapis.com/auth/trace.append" \
   --enable-managed-prometheus \
   --enable-shielded-nodes \
   --node-locations "$ZONE"
+
+
+# Create node pool (no --gpu-driver-version)
+gcloud container node-pools create gpu-pool \
+  --cluster "$CLUSTER_NAME" \
+  --zone "$ZONE" \
+  --machine-type "$MACHINE_TYPE" \
+  --accelerator type="$ACCELERATOR_TYPE",count="$NUM_GPUS" \
+  --num-nodes "1" \
+  --image-type=COS_CONTAINERD \
+  --enable-autoupgrade \
+  --enable-autorepair
+
+gcloud container clusters get-credentials "$CLUSTER_NAME" --zone "$ZONE"
+
+gcloud container node-pools delete default-pool --cluster "$CLUSTER_NAME" --zone "$ZONE" --quiet
+
+# Apply NVIDIA device plugin
+kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.4/nvidia-device-plugin.yml

@@ -41,6 +41,32 @@ jobs:
           echo "✅ Listing compute instances..."
           gcloud compute instances list
 
+      - name: Inject HF_TOKEN into bench-spec.yaml
+        shell: bash
+        env:
+          ENV_HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -f "bench-spec.yaml" ]; then
+            echo "bench-spec.yaml found, injecting HF_TOKEN..."
+            if [ -n "$ENV_HF_TOKEN" ]; then
+              # Replace hf_token line with secret
+              sed -i 's/^\(\s*-*\s*hf_token:\s*\).*/\1'"$ENV_HF_TOKEN"'/' bench-spec.yaml
+              echo "Injection complete."
+            else
+              echo "::warning:: HF_TOKEN secret is not set. Skipping injection."
+            fi
+          else
+            echo "::warning:: bench-spec.yaml not found in project root."
+          fi
+
+# TODO:
+# run python run-bench.py
+
+# TODO:
+# save artifacts (all files ending with .results inside of 4-latest-results/)
+  # 1. into a database on this runner (will later host a dashboard on LMCache website)
+  # 2. as an artifact for the workflow run (accessible in the UI actions tab)
+
       - name: Create dummy results
         run: |
           mkdir -p benchmark_results
