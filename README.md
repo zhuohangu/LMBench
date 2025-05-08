@@ -26,10 +26,41 @@ If you want to start directly from the workload stage (you already have infrastr
 Please add additional dispatch logic to `run-bench.py` to help it parse more options
 in `bench-spec.yaml` and update `bench-spec-TEMPLATE` with a comment in the proper place
 
+# May 7th, 2025 First GKE Run
+
+[demo](https://www.youtube.com/watch?v=KRQbiKFtlqU)
+
+Production Stack v0 and v1 (should) be supported and all 4 workflows (Agentic, Synthetic, ShareGPT, and Mooncake)
+First GKE run worked with:
+
+```yaml
+Infrastructure:
+  Location: LMCacheGKE
+
+Serving:
+  Baseline: ProductionStack
+    vLLM-Version: 0
+    useLMCache: true
+    modelURL: meta-llama/Llama-3.1-8B-Instruct
+    replicaCount: 1
+    numGPUs: 1
+    tensorParallelSize: 1
+    hf_token: <HF_TOKEN>
+    maxModelLen: 16384
+
+Workload:
+  ShareGPT
+    LIMIT: 100
+    MIN_ROUNDS: 5
+    START_ROUND: 3
+    QPS: [1.34, 2]
+```
 
 # May 5th, 2025 Minimal Viable Product
 
 Only a Minikube, ProductionStack, and ShareGPT works right now!
+
+[demo](https://www.youtube.com/watch?v=z3aw-ubZWms)
 
 `bench-spec.yaml`
 

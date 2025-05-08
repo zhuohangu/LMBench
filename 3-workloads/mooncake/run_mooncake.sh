@@ -11,13 +11,13 @@ fi
 
 MODEL=$1
 BASE_URL=$2
+KEY=$3
 
 # CONFIGURATION
-NUM_ROUNDS=20
-
-SYSTEM_PROMPT=0 # Shared system prompt length
-CHAT_HISTORY=256 # User specific chat history length
-ANSWER_LEN=20 # Generation length per round
+NUM_ROUNDS=$4
+SYSTEM_PROMPT=$5 # Shared system prompt length
+CHAT_HISTORY=$6 # User specific chat history length
+ANSWER_LEN=$7 # Generation length per round
 
 run_mooncake() {
     # $1: qps
@@ -39,9 +39,6 @@ run_mooncake() {
 
     sleep 10
 }
-
-KEY=$3
-
 # Run benchmarks for different QPS values
 
 QPS_VALUES=(1)
@@ -51,6 +48,6 @@ bash prepare_mooncake_data.sh
 
 # Run benchmarks for the determined QPS values
 for qps in "${QPS_VALUES[@]}"; do
-    output_file="${KEY}_output_${qps}.csv"
+    output_file="$../../4-latest-results/${KEY}_mooncake_output_${qps}.csv"
     run_benchmark "$qps" "$output_file"
 done

@@ -28,8 +28,10 @@ def setup_infrastructure(config: Dict[str, Any]) -> None:
     location = config['Infrastructure'].get('Location')
     if not location:
         raise ValueError("Infrastructure Location is not specified in bench-spec.yaml")
-
-    if location == 'LocalMinikube':
+    if location == 'NoBench':
+        print("Not running any benchmarks!")
+        sys.exit(0)
+    elif location == 'LocalMinikube':
         minikube_installation(config)
     elif location == 'LMCacheGKE':
         start_gke_cluster(config)
@@ -162,16 +164,26 @@ def _override_yaml(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, 
 
     # Apply only known, nested overrides
     mapping = {
+        # modelSpec level
         'modelURL': lambda v: model_spec.update({'modelURL': v}),
         'replicaCount': lambda v: model_spec.update({'replicaCount': v}),
         'hf_token': lambda v: model_spec.update({'hf_token': v}),
         'numGPUs': lambda v: model_spec.update({'requestGPU': v}),
         'numCPUs': lambda v: model_spec.update({'requestCPU': v}),
+
+        # vllmConfig level
         'maxModelLen': lambda v: vllm_config.update({'maxModelLen': v}),
         'tensorParallelSize': lambda v: vllm_config.update({'tensorParallelSize': v}),
+
+        # lmcacheConfig level
         'useLMCache': lambda v: lmcache_config.update({'enabled': bool(v)}),
         'cpuSize': lambda v: lmcache_config.update({'cpuOffloadingBufferSize': str(v)}),
     }
+
+    # v1 specific overrides
+    if override.get('vLLM-Version') == 1:
+        mapping['enableChunkedPrefill'] = lambda v: vllm_config.update({'enableChunkedPrefill': bool(v)})
+        mapping['enablePrefixCaching'] = lambda v: vllm_config.update({'enablePrefixCaching': bool(v)})
 
     for key, val in override.items():
         handler = mapping.get(key)
@@ -219,13 +231,13 @@ def run_workload(config: Dict[str, Any]) -> None:
         lmcache_synthetic_config = workload_cfg['LMCacheSynthetic']
         run_synthetic(lmcache_synthetic_config)
 
-    if 'Agentic' in workload_cfg:
-        #TODO
-        pass
-
     if 'Mooncake' in workload_cfg:
-        #TODO
-        pass
+        mooncake_config = workload_cfg['Mooncake']
+        run_mooncake(mooncake_config)
+
+    if 'Agentic' in workload_cfg:
+        agentic_config = workload_cfg['Agentic']
+        run_agentic(agentic_config)
 
 def run_sharegpt(sharegpt_config: Dict[str, Any]) -> None:
     """Run the ShareGPT workload with the specified configuration."""
@@ -292,7 +304,6 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
     else:
         raise RuntimeError("Failed to run ShareGPT workload")
 
-
 def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     """Run the synthetic workload with the specified configuration."""
     qps_values = synthetic_config.get('QPS')
@@ -343,6 +354,88 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     else:
         raise RuntimeError("Failed to run synthetic workload")
 
+def run_mooncake(mooncake_config: Dict[str, Any]) -> None:
+    """Run the Mooncake workload with the specified configuration."""
+    qps_values = mooncake_config.get('QPS')
+    NUM_ROUNDS = mooncake_config.get('NUM_ROUNDS')
+    SYSTEM_PROMPT = mooncake_config.get('SYSTEM_PROMPT')
+    CHAT_HISTORY = mooncake_config.get('CHAT_HISTORY')
+    ANSWER_LEN = mooncake_config.get('ANSWER_LEN')
+
+    workload_exec_script_path = Path(__file__).parent / '3-workloads' / 'mooncake' / 'run_mooncake.sh'
+    if not workload_exec_script_path.exists():
+        raise FileNotFoundError(f"Mooncake script not found at {workload_exec_script_path}")
+
+    os.chmod(workload_exec_script_path, 0o755)
+
+    cmd = [str(workload_exec_script_path)]
+    cmd.extend([str(MODEL_URL)])
+    cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
+    cmd.extend([KEY]) # the key that will be embedded in the filenames of the results
+    cmd.extend([str(NUM_ROUNDS)])
+    cmd.extend([str(SYSTEM_PROMPT)])
+    cmd.extend([str(CHAT_HISTORY)])
+    cmd.extend([str(ANSWER_LEN)])
+
+    # Execute the workload
+    print(f"Running Mooncake workload with parameters: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True)
+
+    if result.returncode == 0:
+        print("Mooncake workload completed successfully into 4-latest-results/mooncake-summary.csv")
+    else:
+        raise RuntimeError("Failed to run Mooncake workload")
+
+def run_agentic(agentic_config: Dict[str, Any]) -> None:
+    """Run the Agentic workload with the specified configuration."""
+    """
+
+    MODEL_LIST="$1"
+    BASE_URL=$2
+    KEY=$3
+
+    # Configuration
+    NUM_USERS_WARMUP=$4
+    NUM_AGENTS=$5
+    NUM_ROUNDS=$6
+    SYSTEM_PROMPT=$7
+    CHAT_HISTORY=$8
+    ANSWER_LEN=$9
+    """
+    qps_values = agentic_config.get('QPS')
+    NUM_USERS_WARMUP = agentic_config.get('NUM_USERS_WARMUP')
+    NUM_AGENTS = agentic_config.get('NUM_AGENTS')
+    NUM_ROUNDS = agentic_config.get('NUM_ROUNDS')
+    SYSTEM_PROMPT = agentic_config.get('SYSTEM_PROMPT')
+    CHAT_HISTORY = agentic_config.get('CHAT_HISTORY')
+    ANSWER_LEN = agentic_config.get('ANSWER_LEN')
+
+    workload_exec_script_path = Path(__file__).parent / '3-workloads' / 'agentic' / 'run_agentic.sh'
+    if not workload_exec_script_path.exists():
+        raise FileNotFoundError(f"Agentic script not found at {workload_exec_script_path}")
+
+    os.chmod(workload_exec_script_path, 0o755)
+
+    cmd = [str(workload_exec_script_path)]
+    cmd.extend([str(MODEL_URL)])
+    cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
+    cmd.extend([KEY]) # the key that will be embedded in the filenames of the results
+    cmd.extend([str(NUM_USERS_WARMUP)])
+    cmd.extend([str(NUM_AGENTS)])
+    cmd.extend([str(NUM_ROUNDS)])
+    cmd.extend([str(SYSTEM_PROMPT)])
+    cmd.extend([str(CHAT_HISTORY)])
+    cmd.extend([str(ANSWER_LEN)])
+
+    # Execute the workload
+    print(f"Running Agentic workload with parameters: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True)
+
+    if result.returncode == 0:
+        print("Agentic workload completed successfully into 4-latest-results/agentic-summary.csv")
+    else:
+        raise RuntimeError("Failed to run Agentic workload")
+
 def post_processing() -> None:
     """
     Post-process the verbose results (summarize TTFT and ITL)
@@ -366,7 +459,6 @@ def post_processing() -> None:
         print("Workload post-processing completed successfully")
     else:
         raise RuntimeError("Failed to run workload post-processing")
-
 
 def clean_up() -> None:
     """

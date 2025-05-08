@@ -1,4 +1,7 @@
 Infrastructure:
+  # Option 0: None (when pushing changes that should not run any workflows)
+  Location: NoBench
+
   # Option 1: Minikube (local clone of this repo)
   Location: LocalMinikube
 
@@ -13,11 +16,13 @@ Infrastructure:
   # 16 GPUs -> 128 vCPUs, 1920GB memory
 
 Serving:
-  # Option 1: ProductionStack
+  # Option 1: ProductionStack (with vllm v1)
   Baseline: ProductionStack
   ProductionStack:
     vLLM-Version: 0
     useLMCache: false
+    enableChunkedPrefill: false # vllm v1 specific
+    enablePrefixCaching: false # vllm v1 specific
     modelURL: meta-llama/Llama-3.1-8B-Instruct
     replicaCount: 1
     numGPUs: 1
@@ -84,10 +89,27 @@ Workload:
     # ANSWER_LEN: 20
     # QPS: [15]
 
-  Agentic
-    # Coming soon...
-
   Mooncake
-    # Coming soon...
+    NUM_ROUNDS: 20
+    SYSTEM_PROMPT: 0
+    CHAT_HISTORY: 256
+    ANSWER_LEN: 20
+    QPS: [1]
+
+    # commonly used combinations:
+    # NUM_ROUNDS: 20
+    # SYSTEM_PROMPT: 0
+    # CHAT_HISTORY: 256
+    # ANSWER_LEN: 20
+    # QPS: [1]
+
+  Agentic
+    NUM_USERS_WARMUP: 100
+    NUM_AGENTS: 10
+    NUM_ROUNDS: 20
+    SYSTEM_PROMPT: 0
+    CHAT_HISTORY: 256
+    ANSWER_LEN: 20
+    QPS: [1]
 
 

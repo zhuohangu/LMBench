@@ -1,11 +1,12 @@
 Infrastructure:
+  # Location: NoBench # when pushing changes that should not run any workflows
   Location: LMCacheGKE
   numClusterGPUs: 1
 
 Serving:
   Baseline: ProductionStack
   ProductionStack:
-    vLLM-Version: 0
+    vLLM-Version: 1
     useLMCache: true
     cpuSize: 60
     modelURL: meta-llama/Llama-3.1-8B-Instruct

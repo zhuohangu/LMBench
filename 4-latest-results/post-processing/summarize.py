@@ -90,7 +90,7 @@ def process_output(filename: str):
         if bench_spec_content:
             f.write("\n==================== bench-spec.yaml ======================\n")
             f.write(bench_spec_content)
-            f.write("===========================================================\n")
+            f.write("\n===========================================================\n")
 
     print(f"Performance summary saved to {results_path}")
 
