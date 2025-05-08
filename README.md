@@ -36,6 +36,7 @@ First GKE run worked with:
 ```yaml
 Infrastructure:
   Location: LMCacheGKE
+  numClusterGPUs: 1
 
 Serving:
   Baseline: ProductionStack

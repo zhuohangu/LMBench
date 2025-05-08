@@ -18,8 +18,40 @@ Serving:
     maxModelLen: 16384
 
 Workload:
-  ShareGPT:
-    LIMIT: 100
-    MIN_ROUNDS: 5
-    START_ROUND: 3
-    QPS: [1.34, 2]
+  LMCacheSynthetic:
+    - NUM_USERS_WARMUP: 650
+      NUM_USERS: 350
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 20000
+      ANSWER_LEN: 1000
+      QPS: [0.7]
+
+    # commonly used combinations:
+
+    # long input long output:
+    - NUM_USERS_WARMUP: 750
+      NUM_USERS: 350
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 20000
+      ANSWER_LEN: 1000
+      QPS: [0.7]
+
+    # long input short output:
+    - NUM_USERS_WARMUP: 20
+      NUM_USERS: 15
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 1000
+      CHAT_HISTORY: 20000
+      ANSWER_LEN: 100
+      QPS: [0.1]
+
+    # short input short output:
+    - NUM_USERS_WARMUP: 400
+      NUM_USERS: 320
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 256
+      ANSWER_LEN: 20
+      QPS: [15]

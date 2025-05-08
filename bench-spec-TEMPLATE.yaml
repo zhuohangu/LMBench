@@ -16,7 +16,8 @@ Infrastructure:
   # 16 GPUs -> 128 vCPUs, 1920GB memory
 
 Serving:
-  # Option 1: ProductionStack (with vllm v1)
+  # Option 1: ProductionStack
+  # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
   Baseline: ProductionStack
   ProductionStack:
     vLLM-Version: 0
@@ -45,56 +46,56 @@ Serving:
 
 Workload:
   # Multiple workloads can be specified and they will all be run.
-  ShareGPT
-    LIMIT: 1000
-    MIN_ROUNDS: 10
-    START_ROUND: 0
-    QPS: [1.34, 2]
+  ShareGPT:
+    - LIMIT: 1000
+      MIN_ROUNDS: 10
+      START_ROUND: 0
+      QPS: [1.34, 2]
 
-  LMCacheSynthetic
-    NUM_USERS_WARMUP: 650
-    NUM_USERS: 320
-    NUM_ROUNDS: 20
-    SYSTEM_PROMPT: 1000
-    CHAT_HISTORY: 20000
-    ANSWER_LEN: 100
-    QPS: [0.1, 0.2, 0.3]
+  LMCacheSynthetic:
+    - NUM_USERS_WARMUP: 650
+      NUM_USERS: 350
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 20000
+      ANSWER_LEN: 1000
+      QPS: [0.7]
 
     # commonly used combinations:
 
     # long input long output:
-    # NUM_USERS_WARMUP: 750
-    # NUM_USERS: 350
-    # NUM_ROUNDS: 20
-    # SYSTEM_PROMPT: 0
-    # CHAT_HISTORY: 20000
-    # ANSWER_LEN: 1000
-    # QPS: [0.7]
+    - NUM_USERS_WARMUP: 750
+      NUM_USERS: 350
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 20000
+      ANSWER_LEN: 1000
+      QPS: [0.7]
 
     # long input short output:
-    # NUM_USERS_WARMUP: 20
-    # NUM_USERS: 15
-    # NUM_ROUNDS: 20
-    # SYSTEM_PROMPT: 1000
-    # CHAT_HISTORY: 20000
-    # ANSWER_LEN: 100
-    # QPS: [0.1]
+    - NUM_USERS_WARMUP: 20
+      NUM_USERS: 15
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 1000
+      CHAT_HISTORY: 20000
+      ANSWER_LEN: 100
+      QPS: [0.1]
 
     # short input short output:
-    # NUM_USERS_WARMUP: 400
-    # NUM_USERS: 320
-    # NUM_ROUNDS: 20
-    # SYSTEM_PROMPT: 0
-    # CHAT_HISTORY: 256
-    # ANSWER_LEN: 20
-    # QPS: [15]
+    - NUM_USERS_WARMUP: 400
+      NUM_USERS: 320
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 256
+      ANSWER_LEN: 20
+      QPS: [15]
 
-  Mooncake
-    NUM_ROUNDS: 20
-    SYSTEM_PROMPT: 0
-    CHAT_HISTORY: 256
-    ANSWER_LEN: 20
-    QPS: [1]
+  Mooncake:
+    - NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 256
+      ANSWER_LEN: 20
+      QPS: [1]
 
     # commonly used combinations:
     # NUM_ROUNDS: 20
@@ -103,13 +104,13 @@ Workload:
     # ANSWER_LEN: 20
     # QPS: [1]
 
-  Agentic
-    NUM_USERS_WARMUP: 100
-    NUM_AGENTS: 10
-    NUM_ROUNDS: 20
-    SYSTEM_PROMPT: 0
-    CHAT_HISTORY: 256
-    ANSWER_LEN: 20
-    QPS: [1]
+  Agentic:
+    - NUM_USERS_WARMUP: 100
+      NUM_AGENTS: 10
+      NUM_ROUNDS: 20
+      SYSTEM_PROMPT: 0
+      CHAT_HISTORY: 256
+      ANSWER_LEN: 20
+      QPS: [1]
 
 

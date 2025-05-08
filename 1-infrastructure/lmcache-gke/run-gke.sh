@@ -22,18 +22,23 @@ fi
 
 # Choose machine type and accelerator
 if [ "$NUM_GPUS" -eq 1 ]; then
+  echo "Creating cluster with 1 A100 40GB, Stats should be 12 vCPUs, 85GB memory"
   MACHINE_TYPE="a2-highgpu-1g" # 12 vCPUs, 85GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 2 ]; then
+  echo "Creating cluster with 2 A100 40GB, Stats should be 24 vCPUs, 170GB memory"
   MACHINE_TYPE="a2-highgpu-2g" # 24 vCPUs, 170GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 4 ]; then
+  echo "Creating cluster with 4 A100 40GB, Stats should be 48 vCPUs, 340GB memory"
   MACHINE_TYPE="a2-highgpu-4g" # 48 vCPUs, 340GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 8 ]; then
+  echo "Creating cluster with 8 A100 40GB, Stats should be 96 vCPUs, 680GB memory"
   MACHINE_TYPE="a2-highgpu-8g" # 96 vCPUs, 680GB memory
   ACCELERATOR_TYPE="nvidia-tesla-a100"
 elif [ "$NUM_GPUS" -eq 16 ]; then
+  echo "Creating cluster with 16 A100 80GB, Stats should be 128 vCPUs, 1920GB memory"
   MACHINE_TYPE="a2-ultragpu-16g" # 128 vCPUs, 1920GB memory
   ACCELERATOR_TYPE="nvidia-a100-80gb"
 else
@@ -77,6 +82,8 @@ gcloud beta container --project "$GCP_PROJECT" clusters create "$CLUSTER_NAME" \
   --enable-shielded-nodes \
   --node-locations "$ZONE"
 
+echo "Checking node pools after cluster creation..."
+gcloud container node-pools list --cluster "$CLUSTER_NAME" --zone "$ZONE"
 
 # Create GPU node pool (for the serving engines)
 gcloud container node-pools create gpu-pool \
@@ -89,12 +96,29 @@ gcloud container node-pools create gpu-pool \
   --enable-autoupgrade \
   --enable-autorepair
 
+# Debugging: Manual creation of gpu-pool
+# gcloud container node-pools create gpu-pool \
+#   --cluster "lm-bench" \
+#   --zone "us-central1-a" \
+#   --machine-type "a2-highgpu-2g" \
+#   --accelerator type="nvidia-tesla-a100",count="2" \
+#   --num-nodes "1" \
+#   --image-type=COS_CONTAINERD \
+#   --enable-autoupgrade \
+#   --enable-autorepair
+
+echo "Checking node pools after gpu-pool creation..."
+gcloud container node-pools list --cluster "$CLUSTER_NAME" --zone "$ZONE"
+
 # CPU only node pool (for the router)
 gcloud container node-pools create cpu-pool \
   --cluster "$CLUSTER_NAME" \
   --zone "$ZONE" \
   --machine-type "e2-standard-4" \
   --num-nodes "1"
+
+echo "Checking node pools after cpu-pool creation..."
+gcloud container node-pools list --cluster "$CLUSTER_NAME" --zone "$ZONE"
 
 echo "Getting cluster credentials..."
 gcloud container clusters get-credentials "$CLUSTER_NAME" --zone "$ZONE"

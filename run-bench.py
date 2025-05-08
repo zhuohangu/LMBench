@@ -225,19 +225,35 @@ def run_workload(config: Dict[str, Any]) -> None:
     # Multiple workloads can be run
     if 'ShareGPT' in workload_cfg:
         sharegpt_config = workload_cfg['ShareGPT']
-        run_sharegpt(sharegpt_config)
+        if isinstance(sharegpt_config, list):
+            for config in sharegpt_config:
+                run_sharegpt(config)
+        else:
+            run_sharegpt(sharegpt_config)
 
     if 'LMCacheSynthetic' in workload_cfg:
         lmcache_synthetic_config = workload_cfg['LMCacheSynthetic']
-        run_synthetic(lmcache_synthetic_config)
+        if isinstance(lmcache_synthetic_config, list):
+            for config in lmcache_synthetic_config:
+                run_synthetic(config)
+        else:
+            run_synthetic(lmcache_synthetic_config)
 
     if 'Mooncake' in workload_cfg:
         mooncake_config = workload_cfg['Mooncake']
-        run_mooncake(mooncake_config)
+        if isinstance(mooncake_config, list):
+            for config in mooncake_config:
+                run_mooncake(config)
+        else:
+            run_mooncake(mooncake_config)
 
     if 'Agentic' in workload_cfg:
         agentic_config = workload_cfg['Agentic']
-        run_agentic(agentic_config)
+        if isinstance(agentic_config, list):
+            for config in agentic_config:
+                run_agentic(config)
+        else:
+            run_agentic(agentic_config)
 
 def run_sharegpt(sharegpt_config: Dict[str, Any]) -> None:
     """Run the ShareGPT workload with the specified configuration."""
