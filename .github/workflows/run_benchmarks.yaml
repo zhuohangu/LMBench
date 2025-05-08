@@ -59,9 +59,9 @@ jobs:
           fi
 
       - name: Set up Conda environment and run benchmark script
-        shell: bash -l {0}  # the `-l` runs as a login shell
+        shell: bash -l {0}
         run: |
-          conda init bash
+          source ~/miniconda3/etc/profile.d/conda.sh
           conda activate py312
           python --version
           echo "✅ Running benchmark script..."
