@@ -4,6 +4,7 @@ from typing import Optional
 import os
 import io
 import contextlib
+from datetime import datetime
 
 def ProcessSummary(
     df: pd.DataFrame,
@@ -71,10 +72,25 @@ def process_output(filename: str):
     summary_str = ProcessSummary(df, pending_queries=0)
 
     filename_without_parent_or_ext = os.path.splitext(os.path.basename(filename))[0]
-    results_path = f"4-latest-results/ttft-itl-{filename_without_parent_or_ext}.results"
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M")
+    results_path = f"4-latest-results/ttft-itl-{filename_without_parent_or_ext}-{timestamp}.results"
+
+    # Read bench-spec.yaml and filter out lines with hf_token
+    bench_spec_content = ""
+    if os.path.exists("bench-spec.yaml"):
+        with open("bench-spec.yaml", "r") as spec_file:
+            bench_spec_content = "".join(
+                line for line in spec_file if "hf_token" not in line
+            )
+    else:
+        print("bench-spec.yaml not found")
 
     with open(results_path, "w") as f:
         f.write(summary_str)
+        if bench_spec_content:
+            f.write("\n==================== bench-spec.yaml ======================\n")
+            f.write(bench_spec_content)
+            f.write("===========================================================\n")
 
     print(f"Performance summary saved to {results_path}")
 

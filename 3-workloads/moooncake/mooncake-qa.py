@@ -126,7 +126,7 @@ class RequestExecutor:
         # Ensure base_url ends with /v1
         if not base_url.endswith('/v1'):
             base_url = base_url.rstrip('/') + '/v1'
-        
+
         # For vLLM server, we don't need an API key, but the client requires one
         self.client = openai.AsyncOpenAI(
             api_key="EMPTY",  # Dummy API key for vLLM server
@@ -326,7 +326,7 @@ class UserSessionManager:
         self.sessions = [s for s in self.sessions if not s.finished]
 
     def step(self, timestamp: float, executor: RequestExecutor):
-        
+
         if self.start_time is None:
             self.start_time = timestamp
         if (len(mooncake_data) > self.mooncake_request_to_send):

@@ -43,10 +43,12 @@ while true; do
   TOTAL=$(echo "$PODS" | tail -n +2 | wc -l)
   READY=$(echo "$PODS" | grep '1/1' | wc -l)
 
+  # TODO: uncomment once Helm is deubugged!
   # Check for CrashLoopBackOff or other bad states
   if echo "$PODS" | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff' > /dev/null; then
     echo "❌ Detected pod in CrashLoopBackOff / Error / ImagePullBackOff state!"
     kubectl get pods
+    kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep '^vllm-' | xargs kubectl describe pod
     exit 1
   fi
 
@@ -63,4 +65,3 @@ done
 echo "Ready for port forwarding!"
 
 kubectl port-forward svc/vllm-router-service 30080:80 &
-

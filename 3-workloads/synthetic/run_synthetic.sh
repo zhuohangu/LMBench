@@ -2,6 +2,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
 
 if [[ $# -lt 3 ]]; then
     echo "Usage: $0 <model> <base url> <save file key> [qps_values...]"
@@ -14,16 +15,16 @@ BASE_URL=$2
 KEY=$3
 
 # Configuration
-NUM_USERS_WARMUP=750
-NUM_USERS=320
-NUM_ROUNDS=20
-SYSTEM_PROMPT=0
-CHAT_HISTORY=2000
-ANSWER_LEN=1000
+NUM_USERS_WARMUP=$4
+NUM_USERS=$5
+NUM_ROUNDS=$6
+SYSTEM_PROMPT=$7
+CHAT_HISTORY=$8
+ANSWER_LEN=$9
 
 # If QPS values are provided, use them; otherwise use default
-if [ $# -gt 3 ]; then
-    QPS_VALUES=("${@:4}")
+if [ $# -gt 9 ]; then
+    QPS_VALUES=("${@:10}")
 else
     QPS_VALUES=(0.7)  # Default QPS value
 fi
@@ -50,11 +51,11 @@ warmup() {
 
 run_benchmark() {
     local qps=$1
-    local output_file="${KEY}_qps${qps}.csv"
+    local output_file="../../../4-latest-results/${KEY}_synthetic_output_${qps}.csv"
 
     # warmup with current init ID
     warmup
-    
+
     # actual benchmark with same init ID
     echo "Running benchmark with QPS=$qps..."
     python3 "${SCRIPT_DIR}/multi-round-qa.py" \
@@ -69,7 +70,7 @@ run_benchmark() {
         --init-user-id "$INIT_USER_ID" \
         --output "$output_file" \
         --time 100
-    
+
     sleep 10
 
     # increment init-user-id by NUM_USERS_WARMUP

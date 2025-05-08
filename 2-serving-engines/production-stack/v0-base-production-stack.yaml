@@ -31,4 +31,7 @@ routerSpec:
     limits:
       cpu: "2"
       memory: "8G"
-  routingLogic: "roundrobin"
+  routingLogic: "session"
+  sessionKey: "x-user-id"
+  repository: "lmcache/lmstack-router"
+  tag: "benchmark"

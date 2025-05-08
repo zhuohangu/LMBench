@@ -67,5 +67,5 @@ for file in "${files[@]}"; do
 done
 
 # Move artifacts
-mv warmup.json ../../../4-latest-results/ && echo "Moved warmup.json"
-mv run.json ../../../4-latest-results/ && echo "Moved run.json"
+mv warmup.json .. && echo "Moved warmup.json"
+mv run.json .. && echo "Moved run.json"

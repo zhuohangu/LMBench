@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -x
+
 # Check if number of GPUs argument is provided
 if [ $# -ne 1 ]; then
   echo "Usage: $0 <num_gpus>"
@@ -76,7 +78,7 @@ gcloud beta container --project "$GCP_PROJECT" clusters create "$CLUSTER_NAME" \
   --node-locations "$ZONE"
 
 
-# Create node pool (no --gpu-driver-version)
+# Create GPU node pool (for the serving engines)
 gcloud container node-pools create gpu-pool \
   --cluster "$CLUSTER_NAME" \
   --zone "$ZONE" \
@@ -87,9 +89,47 @@ gcloud container node-pools create gpu-pool \
   --enable-autoupgrade \
   --enable-autorepair
 
+# CPU only node pool (for the router)
+gcloud container node-pools create cpu-pool \
+  --cluster "$CLUSTER_NAME" \
+  --zone "$ZONE" \
+  --machine-type "e2-standard-4" \
+  --num-nodes "1"
+
+echo "Getting cluster credentials..."
 gcloud container clusters get-credentials "$CLUSTER_NAME" --zone "$ZONE"
 
-gcloud container node-pools delete default-pool --cluster "$CLUSTER_NAME" --zone "$ZONE" --quiet
+echo "Labeling nodes in gpu and cpu pools..."
+# Label GPU nodes
+for node in $(kubectl get nodes -o name | grep gpu-pool); do
+    kubectl label "$node" pool=gpu-pool
+done
+
+# Label CPU nodes
+for node in $(kubectl get nodes -o name | grep cpu-pool); do
+    kubectl label "$node" pool=cpu-pool
+done
+
+echo "Patching router and model serving deployments..."
+# Patch router
+kubectl patch deployment vllm-deployment-router \
+  -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
+
+# Patch all model serving deployments
+for deploy in $(kubectl get deployments -o name | grep deployment-vllm); do
+  kubectl patch "$deploy" \
+    -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
+done
+echo "Assigned router and model serving deployments to cpu and gpu pools respectively"
 
 # Apply NVIDIA device plugin
-kubectl apply -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.4/nvidia-device-plugin.yml
+PLUGIN_YAML_LOCAL="1-infrastructure/lmcache-gke/nvidia-device-plugin.yml"
+PLUGIN_YAML_REMOTE="https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.4/nvidia-device-plugin.yml"
+
+if [ -f "$PLUGIN_YAML_LOCAL" ]; then
+    echo "✅ Using local NVIDIA device plugin YAML at $PLUGIN_YAML_LOCAL"
+    kubectl apply -f "$PLUGIN_YAML_LOCAL"
+else
+    echo "🌐 Local file not found — using remote NVIDIA device plugin YAML from GitHub"
+    kubectl apply -f "$PLUGIN_YAML_REMOTE"
+fi

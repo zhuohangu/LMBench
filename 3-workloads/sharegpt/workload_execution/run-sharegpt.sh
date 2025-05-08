@@ -33,7 +33,7 @@ warm_up() {
         --base-url "$BASE_URL" \
         --output /tmp/warmup.csv \
         --log-interval 30 \
-        --sharegpt-file "../../../4-latest-results/warmup.json"
+        --sharegpt-file "../warmup.json"
 
     sleep 10
 }
@@ -49,23 +49,14 @@ run_benchmark() {
         --base-url "$BASE_URL" \
         --output "$2" \
         --log-interval 30 \
-        --sharegpt-file "../../../4-latest-results/run.json"
+        --sharegpt-file "../run.json"
 
     sleep 10
 }
 
 # Run benchmarks for the specified QPS values
 for qps in "${QPS_VALUES[@]}"; do
-    output_file="../../../4-latest-results/${KEY}_output_${qps}.csv"
+    output_file="../../../4-latest-results/${KEY}_sharegpt_output_${qps}.csv"
     warm_up "$qps"
     run_benchmark "$qps" "$output_file"
 done
-
-
-# python3 sharegpt-qa.py \
-#     --qps 1.34 \
-#     --model meta-llama/Llama-3.1-8B-Instruct \
-#     --base-url http://localhost:30080/v1/ \
-#     --output sharegpt-test.csv \
-#     --log-interval 30 \
-#     --sharegpt-file "run.json"

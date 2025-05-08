@@ -49,7 +49,6 @@ jobs:
           if [ -f "bench-spec.yaml" ]; then
             echo "bench-spec.yaml found, injecting HF_TOKEN..."
             if [ -n "$ENV_HF_TOKEN" ]; then
-              # Replace hf_token line with secret
               sed -i 's/^\(\s*-*\s*hf_token:\s*\).*/\1'"$ENV_HF_TOKEN"'/' bench-spec.yaml
               echo "Injection complete."
             else
@@ -59,21 +58,23 @@ jobs:
             echo "::warning:: bench-spec.yaml not found in project root."
           fi
 
-# TODO:
-# run python run-bench.py
+      - NAME: Activate venv
+        run: conda activate py312
 
-# TODO:
-# save artifacts (all files ending with .results inside of 4-latest-results/)
-  # 1. into a database on this runner (will later host a dashboard on LMCache website)
-  # 2. as an artifact for the workflow run (accessible in the UI actions tab)
-
-      - name: Create dummy results
+      - name: Run benchmark script
         run: |
-          mkdir -p benchmark_results
-          echo "Hello from self-hosted runner!" > benchmark_results/test_output.txt
+          echo "✅ Running benchmark script..."
+          python run-bench.py
 
-      - name: Upload dummy artifact
+      # eventually we will use /srv/runner-db as a database for the dashboard
+      # results files include TTFT, ITL, and the bench-spec.yaml content that ran the benchmark
+      - name: Save .results files to local DB folder outside workspace
+        run: |
+          find 4-latest-results/ -name '*.results' -exec cp {} ~/srv/runner-db/ \;
+          echo "✅ Saved .results files to ~/srv/runner-db/"
+
+      - name: Upload .results artifacts to GitHub
         uses: actions/upload-artifact@v4
         with:
-          name: test-artifact
-          path: benchmark_results/
+          name: benchmark-results
+          path: 4-latest-results/*.results

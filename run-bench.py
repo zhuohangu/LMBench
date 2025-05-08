@@ -29,7 +29,7 @@ def setup_infrastructure(config: Dict[str, Any]) -> None:
     if not location:
         raise ValueError("Infrastructure Location is not specified in bench-spec.yaml")
 
-    if location == 'Minikube':
+    if location == 'LocalMinikube':
         minikube_installation(config)
     elif location == 'LMCacheGKE':
         start_gke_cluster(config)
@@ -216,8 +216,8 @@ def run_workload(config: Dict[str, Any]) -> None:
         run_sharegpt(sharegpt_config)
 
     if 'LMCacheSynthetic' in workload_cfg:
-        #TODO
-        pass
+        lmcache_synthetic_config = workload_cfg['LMCacheSynthetic']
+        run_synthetic(lmcache_synthetic_config)
 
     if 'Agentic' in workload_cfg:
         #TODO
@@ -292,7 +292,61 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
     else:
         raise RuntimeError("Failed to run ShareGPT workload")
 
-    # do post processing
+
+def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
+    """Run the synthetic workload with the specified configuration."""
+    qps_values = synthetic_config.get('QPS')
+    NUM_USERS_WARMUP = synthetic_config.get('NUM_USERS_WARMUP')
+    NUM_USERS = synthetic_config.get('NUM_USERS')
+    NUM_ROUNDS = synthetic_config.get('NUM_ROUNDS')
+    SYSTEM_PROMPT = synthetic_config.get('SYSTEM_PROMPT')
+    CHAT_HISTORY = synthetic_config.get('CHAT_HISTORY')
+    ANSWER_LEN = synthetic_config.get('ANSWER_LEN')
+
+    workload_exec_script_path = Path(__file__).parent / '3-workloads' / 'synthetic' / 'run_synthetic.sh'
+    if not workload_exec_script_path.exists():
+        raise FileNotFoundError(f"Synthetic script not found at {workload_exec_script_path}")
+
+    os.chmod(workload_exec_script_path, 0o755)
+
+    cmd = [str(workload_exec_script_path)]
+    cmd.extend([str(MODEL_URL)])
+    cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
+    cmd.extend([KEY]) # the key that will be embedded in the filenames of the results
+    """
+    MODEL=$1
+    BASE_URL=$2
+    KEY=$3
+
+    # Configuration
+    NUM_USERS_WARMUP=$4
+    NUM_USERS=$5
+    NUM_ROUNDS=$6
+    SYSTEM_PROMPT=$7
+    CHAT_HISTORY=$8
+    ANSWER_LEN=$9
+    """
+    cmd.extend([str(NUM_USERS_WARMUP)])
+    cmd.extend([str(NUM_USERS)])
+    cmd.extend([str(NUM_ROUNDS)])
+    cmd.extend([str(SYSTEM_PROMPT)])
+    cmd.extend([str(CHAT_HISTORY)])
+    cmd.extend([str(ANSWER_LEN)])
+    cmd.extend([str(qps) for qps in qps_values])
+
+    # Execute the workload
+    print(f"Running synthetic workload with parameters: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=True)
+
+    if result.returncode == 0:
+        print("Synthetic workload completed successfully into 4-latest-results/synthetic-summary.csv")
+    else:
+        raise RuntimeError("Failed to run synthetic workload")
+
+def post_processing() -> None:
+    """
+    Post-process the verbose results (summarize TTFT and ITL)
+    """
     # run 4-latest-results/post-processing/summarize.py
     summarize_script_path = Path(__file__).parent / '4-latest-results' / 'post-processing' / 'summarize.py'
     os.chmod(summarize_script_path, 0o755)
@@ -309,15 +363,15 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
             raise RuntimeError(f"Failed to post-process {csv_path}")
 
     if result.returncode == 0:
-        print("ShareGPT workload post-processing completed successfully")
+        print("Workload post-processing completed successfully")
     else:
-        raise RuntimeError("Failed to run ShareGPT workload post-processing")
+        raise RuntimeError("Failed to run workload post-processing")
+
 
 def clean_up() -> None:
     """
     Does not need to specified in the bench-spec.yaml configuration
     """
-
     # run 4-latest-results/post-processing/cleanup.sh
     cleanup_script_path = Path(__file__).parent / '4-latest-results' / 'post-processing' / 'cleanup.sh'
     os.chmod(cleanup_script_path, 0o755)
@@ -380,6 +434,9 @@ def main() -> None:
 
         # 3. Run the specified workload
         run_workload(config)
+
+        # 4. Post-process the verbose results (summarize TTFT and ITL)
+        post_processing()
 
     except Exception as e:
         print(f"Benchmarking Error: {str(e)}")
