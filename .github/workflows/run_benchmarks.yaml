@@ -58,11 +58,12 @@ jobs:
             echo "::warning:: bench-spec.yaml not found in project root."
           fi
 
-      - name: Activate venv
-        run: conda activate py312
-
-      - name: Run benchmark script
+      - name: Set up Conda environment and run benchmark script
+        shell: bash -l {0}  # the `-l` runs as a login shell
         run: |
+          conda init bash
+          conda activate py312
+          python --version
           echo "✅ Running benchmark script..."
           python run-bench.py
 
