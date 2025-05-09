@@ -13,7 +13,6 @@ servingEngineSpec:
     pvcAccessMode:
       - ReadWriteOnce
     vllmConfig:
-      enableChunkedPrefill: false # new for v1
       enablePrefixCaching: false # new for v1
       maxModelLen: 20000
       dtype: "bfloat16"

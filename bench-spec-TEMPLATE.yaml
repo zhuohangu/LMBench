@@ -21,9 +21,8 @@ Serving:
   Baseline: ProductionStack
   ProductionStack:
     vLLM-Version: 0
+    enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
     useLMCache: false
-    enableChunkedPrefill: false # vllm v1 specific
-    enablePrefixCaching: false # vllm v1 specific
     modelURL: meta-llama/Llama-3.1-8B-Instruct
     replicaCount: 1
     numGPUs: 1

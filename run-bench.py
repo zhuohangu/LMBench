@@ -182,7 +182,6 @@ def _override_yaml(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, 
 
     # v1 specific overrides
     if override.get('vLLM-Version') == 1:
-        mapping['enableChunkedPrefill'] = lambda v: vllm_config.update({'enableChunkedPrefill': bool(v)})
         mapping['enablePrefixCaching'] = lambda v: vllm_config.update({'enablePrefixCaching': bool(v)})
 
     for key, val in override.items():

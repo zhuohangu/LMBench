@@ -1,7 +1,7 @@
 Infrastructure:
   # Location: NoBench # when pushing changes that should not run any workflows
   Location: LMCacheGKE
-  numClusterGPUs: 1
+  numClusterGPUs: 2
 
 Serving:
   Baseline: ProductionStack
@@ -10,7 +10,8 @@ Serving:
     useLMCache: true
     cpuSize: 60
     modelURL: meta-llama/Llama-3.1-8B-Instruct
-    replicaCount: 1
+    enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
+    replicaCount: 2
     numGPUs: 1
     numCPUs: 4
     tensorParallelSize: 1
@@ -19,16 +20,6 @@ Serving:
 
 Workload:
   LMCacheSynthetic:
-    - NUM_USERS_WARMUP: 650
-      NUM_USERS: 350
-      NUM_ROUNDS: 20
-      SYSTEM_PROMPT: 0
-      CHAT_HISTORY: 20000
-      ANSWER_LEN: 1000
-      QPS: [0.7]
-
-    # commonly used combinations:
-
     # long input long output:
     - NUM_USERS_WARMUP: 750
       NUM_USERS: 350
