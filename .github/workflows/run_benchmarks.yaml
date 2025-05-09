@@ -9,6 +9,9 @@ on:
 jobs:
   test-runner:
     runs-on: self-hosted
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout repo
