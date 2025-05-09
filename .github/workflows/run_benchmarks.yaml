@@ -26,6 +26,12 @@ jobs:
           echo "✅ Checking gcloud installation..."
           gcloud --version
 
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/816706432769/locations/global/workloadIdentityPools/lmbench-pool/providers/github-provider'
+          service_account: 'lmbench-runner@theta-dialect-454217-m5.iam.gserviceaccount.com'
+
       - name: Show active gcloud account
         run: |
           echo "✅ Checking gcloud auth list..."
