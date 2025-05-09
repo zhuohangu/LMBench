@@ -1,3 +1,19 @@
+Launched queries: 0, pending queries: 0, finished queries: 0
+
+==================== Performance summary ======================
+  QPS: 0.0000 reqs/s
+  Processing speed: nan reqs/s
+  Requests on-the-fly: 0
+  Input tokens per second: nan tokens/s
+  Output tokens per second: nan tokens/s
+  Average generation throughput (per request): nan tokens/req/s
+  Average TTFT: nans
+  Average generation_time / generation_tokens (Inter-Token Latency): nan
+  Time range: nan - nan (nans)
+===============================================================
+
+
+==================== bench-spec.yaml ======================
 Infrastructure:
   # Location: NoBench # when pushing changes that should not run any workflows
   Location: LMCacheGKE
@@ -6,7 +22,7 @@ Infrastructure:
 Serving:
   Baseline: ProductionStack
   ProductionStack:
-    vLLM-Version: 0
+    vLLM-Version: 1
     useLMCache: true
     cpuSize: 60
     modelURL: meta-llama/Llama-3.1-8B-Instruct
@@ -15,7 +31,6 @@ Serving:
     numGPUs: 1
     numCPUs: 4
     tensorParallelSize: 1
-    hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
 Workload:
@@ -46,3 +61,4 @@ Workload:
       CHAT_HISTORY: 256
       ANSWER_LEN: 20
       QPS: [15]
+===========================================================

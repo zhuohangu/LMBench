@@ -30,7 +30,6 @@ servingEngineSpec:
     tag: latest
     vllmConfig:
       dtype: bfloat16
-      enableChunkedPrefill: false
       enablePrefixCaching: false
       extraArgs:
       - --disable-log-requests

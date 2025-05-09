@@ -45,15 +45,16 @@ while true; do
 
   # TODO: uncomment once Helm is deubugged!
   # Check for CrashLoopBackOff or other bad states
-  # if echo "$PODS" | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff' > /dev/null; then
-  #   echo "❌ Detected pod in CrashLoopBackOff / Error / ImagePullBackOff state!"
-  #   kubectl get pods
-  #   kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep '^vllm-' | xargs kubectl describe pod
-  #   exit 1
-  # fi
+  if echo "$PODS" | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff' > /dev/null; then
+    echo "❌ Detected pod in CrashLoopBackOff / Error / ImagePullBackOff state!"
+    kubectl get pods
+    kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep '^vllm-' | xargs kubectl describe pod
+    exit 1
+  fi
 
   if [ "$READY" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
     echo "✅ All $TOTAL pods are running and ready."
+    kubectl get pods
     break
   else
     echo "⏳ $READY/$TOTAL pods ready..."
