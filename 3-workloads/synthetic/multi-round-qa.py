@@ -117,10 +117,6 @@ class Response:
 class RequestExecutor:
 
     def __init__(self, base_url: str, model: str):
-        # Ensure base_url ends with /v1
-        if not base_url.endswith('/v1'):
-            base_url = base_url.rstrip('/') + '/v1'
-
         # For vLLM server, we don't need an API key, but the client requires one
         self.client = openai.AsyncOpenAI(
             api_key="EMPTY",  # Dummy API key for vLLM server

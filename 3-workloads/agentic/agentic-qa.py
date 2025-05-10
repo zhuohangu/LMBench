@@ -121,10 +121,6 @@ class Response:
 class RequestExecutor:
 
     def __init__(self, base_url: str, model: List[str]):
-        # Ensure base_url ends with /v1
-        if not base_url.endswith('/v1'):
-            base_url = base_url.rstrip('/') + '/v1'
-        
         # For vLLM server, we don't need an API key, but the client requires one
         self.client = openai.AsyncOpenAI(
             api_key="EMPTY",  # Dummy API key for vLLM server
@@ -135,12 +131,12 @@ class RequestExecutor:
         self.loop = AsyncLoopWrapper.GetOrStartLoop()
         self.request_history = []
 
-    async def _async_launch_request(self, messages: List[Dict[str, str]],  max_tokens: int, 
+    async def _async_launch_request(self, messages: List[Dict[str, str]],  max_tokens: int,
                                     agentID: int, extra_headers: Optional[Dict[str, str]] = None):
         model = self.model[agentID]
         try:
             logging.info(f"Sending request to model {model} with messages: {messages}")
-            
+
             # Initialize response tracking variables
             words = ""
             tokens_out = 0
@@ -163,13 +159,13 @@ class RequestExecutor:
             async for chunk in response:
                 if not chunk.choices:
                     continue
-                    
+
                 # Handle content
                 if chunk.choices[0].delta.content is not None:
                     if first_token_time is None and chunk.choices[0].delta.content != "":
                         first_token_time = time.time()
                     words += chunk.choices[0].delta.content
-                
+
             # Handle token counts if available
             if hasattr(chunk, 'usage') and chunk.usage is not None:
                 tokens_out = chunk.usage.completion_tokens
@@ -302,7 +298,7 @@ class UserSession:
             f"User {self.user_config.user_id} issues request {self.question_id}"
         )
         messages = self.chat_history.get_messages_for_openai()
-        self.inputs.append(messages.copy()) 
+        self.inputs.append(messages.copy())
         request_executor.launch_request(
             messages,
             max_tokens,

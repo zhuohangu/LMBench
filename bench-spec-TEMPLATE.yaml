@@ -20,13 +20,13 @@ Serving:
   # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
   Baseline: ProductionStack
   ProductionStack:
-    vLLM-Version: 0
+    vLLM-Version: 0 # vllm v0 or v1
     enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
-    useLMCache: false
+    useLMCache: false # true or false
     modelURL: meta-llama/Llama-3.1-8B-Instruct
-    replicaCount: 1
-    numGPUs: 1
-    numCPUs: 4
+    replicaCount: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
+    numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
+    numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
     tensorParallelSize: 1
     hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
@@ -34,7 +34,7 @@ Serving:
   # Option 2: SGLang
   Baseline: SGLang
   SGLang:
-    modelURL: meta-llama/Llama-3.1-70B-Instruct
+    modelURL: meta-llama/Llama-3.1-70B-Instruct # specify your model
     hf_token: <YOUR_HF_TOKEN>
     # Coming soon...
 
