@@ -2,7 +2,7 @@ Infrastructure:
   # Location: NoBench # when pushing changes that should not run any workflows
   # Location: LocalMinikube
   Location: LMCacheGKE
-  numClusterGPUs: 4
+  numClusterGPUs: 8
 
 Serving:
   Baseline: ProductionStack
@@ -10,14 +10,14 @@ Serving:
     vLLM-Version: 1
     useLMCache: true
     cpuSize: 60
-    modelURL: meta-llama/Llama-3.1-8B-Instruct
+    modelURL: meta-llama/Llama-3.1-70B-Instruct
     enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
     replicaCount: 4
-    numGPUs: 1
+    numGPUs: 2
     numCPUs: 4
-    tensorParallelSize: 1
+    tensorParallelSize: 2
     hf_token: <YOUR_HF_TOKEN>
-    maxModelLen: 16384
+    maxModelLen: 20000
 
 Workload:
 
@@ -36,6 +36,7 @@ Workload:
       CHAT_HISTORY: 20000
       ANSWER_LEN: 1000
       QPS: [0.7]
+      USE_SHAREGPT: false
 
     # long input short output:
     - NUM_USERS_WARMUP: 20
@@ -45,7 +46,7 @@ Workload:
       CHAT_HISTORY: 20000
       ANSWER_LEN: 100
       QPS: [0.1]
-
+      USE_SHAREGPT: false
     # short input short output:
     - NUM_USERS_WARMUP: 400
       NUM_USERS: 320
@@ -54,3 +55,20 @@ Workload:
       CHAT_HISTORY: 256
       ANSWER_LEN: 20
       QPS: [15]
+      USE_SHAREGPT: false
+
+  # Mooncake:
+  # - NUM_ROUNDS: 20
+  #   SYSTEM_PROMPT: 0
+  #   CHAT_HISTORY: 256
+  #   ANSWER_LEN: 20
+  #   QPS: [1]
+
+  # Agentic:
+  # - NUM_USERS_WARMUP: 100
+  #   NUM_AGENTS: 10
+  #   NUM_ROUNDS: 20
+  #   SYSTEM_PROMPT: 0
+  #   CHAT_HISTORY: 256
+  #   ANSWER_LEN: 20
+  #   QPS: [1]

@@ -4,8 +4,8 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
-if [[ $# -ne 3 ]]; then
-    echo "Usage: $0 <model> <base url> <save file key>"
+if [[ $# -ne 7 ]]; then
+    echo "Usage: $0 <model> <base url> <save file key> <num rounds> <system prompt> <chat history> <answer len>"
     exit 1
 fi
 
@@ -44,10 +44,11 @@ run_mooncake() {
 QPS_VALUES=(1)
 
 # prepare the mooncake data
-bash prepare_mooncake_data.sh
+chmod +x ./prepare_mooncake.sh
+./prepare_mooncake.sh
 
 # Run benchmarks for the determined QPS values
 for qps in "${QPS_VALUES[@]}"; do
     output_file="$../../4-latest-results/${KEY}_mooncake_output_${qps}.csv"
-    run_benchmark "$qps" "$output_file"
+    run_mooncake "$qps" "$output_file"
 done

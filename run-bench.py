@@ -319,8 +319,24 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
     else:
         raise RuntimeError("Failed to run ShareGPT workload")
 
+def synthetic_sharegpt_data_generation(model_url: str) -> None:
+    """Generate ShareGPT data for synthetic workload."""
+    data_gen_script_path = Path(__file__).parent / '3-workloads' / 'synthetic' / 'prepare_synthetic_sharegpt.sh'
+    os.chmod(data_gen_script_path, 0o755)
+    result = subprocess.run([str(data_gen_script_path), str(model_url)], check=True)
+
+    if result.returncode == 0:
+        print("ShareGPT data generation completed successfully into 4-latest-results/sharegpt-data.json")
+    else:
+        raise RuntimeError("Failed to generate ShareGPT data")
+
 def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     """Run the synthetic workload with the specified configuration."""
+
+    # function level attribute of share_gpt_generated so we only generate data once
+    if not hasattr(run_synthetic, 'share_gpt_generated'):
+        run_synthetic.share_gpt_generated = False
+
     qps_values = synthetic_config.get('QPS')
     NUM_USERS_WARMUP = synthetic_config.get('NUM_USERS_WARMUP')
     NUM_USERS = synthetic_config.get('NUM_USERS')
@@ -328,6 +344,11 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     SYSTEM_PROMPT = synthetic_config.get('SYSTEM_PROMPT')
     CHAT_HISTORY = synthetic_config.get('CHAT_HISTORY')
     ANSWER_LEN = synthetic_config.get('ANSWER_LEN')
+    USE_SHAREGPT = synthetic_config.get('USE_SHAREGPT', False)
+
+    if not run_synthetic.share_gpt_generated and USE_SHAREGPT:
+        synthetic_sharegpt_data_generation(MODEL_URL)
+        run_synthetic.share_gpt_generated = True
 
     workload_exec_script_path = Path(__file__).parent / '3-workloads' / 'synthetic' / 'run_synthetic.sh'
     if not workload_exec_script_path.exists():
@@ -358,6 +379,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     cmd.extend([str(SYSTEM_PROMPT)])
     cmd.extend([str(CHAT_HISTORY)])
     cmd.extend([str(ANSWER_LEN)])
+    cmd.extend([str(USE_SHAREGPT)])
     cmd.extend([str(qps) for qps in qps_values])
 
     # Execute the workload

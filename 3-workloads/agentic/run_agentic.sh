@@ -34,7 +34,7 @@ INIT_USER_ID=1
 
 warmup() {
     echo "Warming up with agent count=$NUM_AGENTS..."
-    python3 "${SCRIPT_DIR}/agentic-workload.py" \
+    python3 "${SCRIPT_DIR}/agentic-qa.py" \
         --num-agents "$NUM_AGENTS" \
         --num-rounds 2 \
         --shared-system-prompt "$(echo -n "$SYSTEM_PROMPT" | wc -w)" \
@@ -58,7 +58,7 @@ run_benchmark() {
 
     # actual benchmark with same init ID
     echo "Running benchmark with new_user_interval=$new_user_interval..."
-    python3 "${SCRIPT_DIR}/agentic-workload.py" \
+    python3 "${SCRIPT_DIR}/agentic-qa.py" \
         --num-agents "$NUM_AGENTS" \
         --shared-system-prompt "$(echo -n "$SYSTEM_PROMPT" | wc -w)" \
         --user-history-prompt "$(echo -n "$CHAT_HISTORY" | wc -w)" \

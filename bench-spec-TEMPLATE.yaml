@@ -27,7 +27,7 @@ Serving:
     replicaCount: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
     numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
     numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
-    tensorParallelSize: 1
+    tensorParallelSize: 1 # please make sure tensorParallelSize <= numGPUs (this is the number of GPUs per replica)
     hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
@@ -59,6 +59,7 @@ Workload:
       CHAT_HISTORY: 20000
       ANSWER_LEN: 1000
       QPS: [0.7]
+      USE_SHAREGPT: false
 
     # commonly used combinations:
 
@@ -70,7 +71,7 @@ Workload:
       CHAT_HISTORY: 20000
       ANSWER_LEN: 1000
       QPS: [0.7]
-
+      USE_SHAREGPT: false
     # long input short output:
     - NUM_USERS_WARMUP: 20
       NUM_USERS: 15
@@ -79,6 +80,7 @@ Workload:
       CHAT_HISTORY: 20000
       ANSWER_LEN: 100
       QPS: [0.1]
+      USE_SHAREGPT: false
 
     # short input short output:
     - NUM_USERS_WARMUP: 400
@@ -88,6 +90,7 @@ Workload:
       CHAT_HISTORY: 256
       ANSWER_LEN: 20
       QPS: [15]
+      USE_SHAREGPT: false
 
   Mooncake:
     - NUM_ROUNDS: 20
@@ -97,6 +100,7 @@ Workload:
       QPS: [1]
 
     # commonly used combinations:
+    # NOTE: max model len here needs to be >= 23692
     # NUM_ROUNDS: 20
     # SYSTEM_PROMPT: 0
     # CHAT_HISTORY: 256

@@ -546,7 +546,7 @@ def main():
         logger = init_logger(__name__, level=logging.DEBUG)
     step_interval = 0.1
     executor = RequestExecutor(
-        base_url=args.base_url, api_key="EMPTY", model=args.model
+        base_url=args.base_url, model=args.model
     )
     warmup_engine(executor)
     workload_config = WorkloadConfig(
