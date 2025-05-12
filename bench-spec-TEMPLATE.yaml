@@ -16,10 +16,10 @@ Infrastructure:
   # 16 GPUs -> 128 vCPUs, 1920GB memory
 
 Serving:
-  # Option 1: ProductionStack
+  # Option 1: Helm-ProductionStack (Uses the latest helm chart from production-stack)
   # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
-  Baseline: ProductionStack
-  ProductionStack:
+  Baseline: Helm-ProductionStack
+  Helm-ProductionStack:
     vLLM-Version: 0 # vllm v0 or v1
     enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
     useLMCache: false # true or false
@@ -31,14 +31,27 @@ Serving:
     hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
-  # Option 2: SGLang
+  # Option 2: Latest-ProductionStack (Renders the latest k8s deployment directly from production-stack source code)
+  Baseline: Latest-ProductionStack
+  Latest-ProductionStack:
+    useLMCache: true
+    cpuSize: 60
+    modelURL: meta-llama/Llama-3.1-70B-Instruct
+    enablePrefixCaching: false
+    replicaCount: 4
+    numGPUs: 2
+    numCPUs: 4
+    tensorParallelSize: 2
+    hf_token: <YOUR_HF_TOKEN>
+    maxModelLen: 16384
+  # Option 3: SGLang
   Baseline: SGLang
   SGLang:
     modelURL: meta-llama/Llama-3.1-70B-Instruct # specify your model
     hf_token: <YOUR_HF_TOKEN>
     # Coming soon...
 
-  # Option 3: Dynamo
+  # Option 4: Dynamo
   Baseline: Dynamo
   Dynamo:
     # Coming soon...

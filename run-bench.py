@@ -100,20 +100,33 @@ def setup_baseline(config: Dict[str, Any]) -> None:
 
         # TODO
         pass
-    elif baseline == 'ProductionStack':
-        KEY = 'stack'
-        prodstack_config = config['Serving'].get('ProductionStack', {})
+    elif baseline == 'Helm-ProductionStack':
+        KEY = 'helm-production-stack'
+        prodstack_config = config['Serving'].get('Helm-ProductionStack', {})
         model_url = prodstack_config.get('modelURL')
         hf_token = prodstack_config.get('hf_token')
         if not model_url:
-            raise ValueError("modelURL must be specified in bench-spec.yaml for ProductionStack baseline")
+            raise ValueError("modelURL must be specified in bench-spec.yaml for Helm-ProductionStack baseline")
         if not hf_token:
-            raise ValueError("hf_token must be specified in bench-spec.yaml for ProductionStack baseline")
+            raise ValueError("hf_token must be specified in bench-spec.yaml for Helm-ProductionStack baseline")
         MODEL_URL = model_url
         HF_TOKEN = hf_token
 
         # helm installation
         helm_installation(prodstack_config)
+    elif baseline == 'Latest-ProductionStack':
+        KEY = 'latest-production-stack'
+        latest_production_stack_config = config['Serving'].get('Latest-ProductionStack', {})
+        model_url = latest_production_stack_config.get('modelURL')
+        hf_token = latest_production_stack_config.get('hf_token')
+        if not model_url:
+            raise ValueError("modelURL must be specified in bench-spec.yaml for Latest-ProductionStack baseline")
+        if not hf_token:
+            raise ValueError("hf_token must be specified in bench-spec.yaml for Latest-ProductionStack baseline")
+        MODEL_URL = model_url
+        HF_TOKEN = hf_token
+
+        kubernetes_rendering(latest_production_stack_config)
     elif baseline == 'Dynamo':
         KEY = 'dynamo'
         #TODO
@@ -132,7 +145,7 @@ def helm_installation(prodstack_config: Dict[str, Any]) -> None:
         prodstack_base_name = 'v1-base-production-stack.yaml'
         generated_name = 'v1-generated-production-stack.yaml'
 
-    base_yaml_file = Path(__file__).parent / '2-serving-engines' / 'production-stack' / prodstack_base_name
+    base_yaml_file = Path(__file__).parent / '2-serving-engines' / 'helm-production-stack' / prodstack_base_name
 
     if not base_yaml_file.exists():
         raise FileNotFoundError(f"Base YAML file not found: {base_yaml_file}")
@@ -149,7 +162,7 @@ def helm_installation(prodstack_config: Dict[str, Any]) -> None:
         print(f"Generated config written to {output_path}")
 
     # Run the helm installation script
-    install_script = Path(__file__).parent / '2-serving-engines' / 'production-stack' / 'helm-install.sh'
+    install_script = Path(__file__).parent / '2-serving-engines' / 'helm-production-stack' / 'helm-install.sh'
     os.chmod(install_script, 0o755)
     print("Running Helm install script...")
     subprocess.run([str(install_script), str(output_path)], check=True)
@@ -192,6 +205,23 @@ def _override_yaml(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, 
             print(f"[warn] Ignoring unrecognized override key: '{key}'")
 
     return base
+
+def kubernetes_rendering(latest_production_stack_config: Dict[str, Any]) -> None:
+    """
+    Render the latest k8s deployment from latest-production-stack
+    """
+    # first testing whether the deployment even works (DELETE later an use render instead)
+    deploy_script_path = Path(__file__).parent / '2-serving-engines' / 'latest-production-stack' / 'kube-deploy.sh'
+    os.chmod(deploy_script_path, 0o755)
+    result = subprocess.run([str(deploy_script_path), str(latest_production_stack_config.get('useLMCache', False))], check=True)
+    if result.returncode == 0:
+        print("Kubernetes deployment completed successfully")
+    else:
+        raise RuntimeError("Failed to deploy Kubernetes")
+
+    # Render the k8s deployment
+    # TODO
+
 
 # 3. Run the specified workload
 def run_workload(config: Dict[str, Any]) -> None:
