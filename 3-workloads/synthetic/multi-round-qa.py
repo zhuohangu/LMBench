@@ -113,13 +113,26 @@ class Response:
     launch_time: float
     finish_time: float
 
+"""
+curl http://localhost:30080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer dmxsbV94eHh4eHh4eHh4eHh4" \
+  -d '{
+    "model": "meta-llama/Llama-3.1-8B-Instruct",
+    "messages": [
+      {"role": "system", "content": "You are a helpful assistant."},
+      {"role": "user", "content": "Tell me a fun fact about whales."}
+    ],
+    "temperature": 0.7
+  }'
+"""
 
 class RequestExecutor:
 
     def __init__(self, base_url: str, model: str):
         # For vLLM server, we don't need an API key, but the client requires one
         self.client = openai.AsyncOpenAI(
-            api_key="EMPTY",  # Dummy API key for vLLM server
+            api_key="vllm_xxxxxxxxxxxxx",  # Dummy API key for vLLM server
             base_url=base_url
         )
         self.model = model

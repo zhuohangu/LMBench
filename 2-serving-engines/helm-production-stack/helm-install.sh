@@ -49,6 +49,7 @@ while true; do
     echo "❌ Detected pod in CrashLoopBackOff / Error / ImagePullBackOff state!"
     kubectl get pods
     kubectl get pods --no-headers -o custom-columns=":metadata.name" | grep '^vllm-' | xargs kubectl describe pod
+    kubectl delete all --all
     exit 1
   fi
 

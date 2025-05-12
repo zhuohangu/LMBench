@@ -1,0 +1,8 @@
+Finish latest-production-stack automation
+Migrate SGLang deployment
+Migrate Dynamo deployment
+Add vllm benchmark "serving" Workload
+Upgrade summarize.py with more stats from the vllm benchmarking
+Create a Web Dashboard for results stored on LMBench CPU Runner
+Fix Tensor Parallel Deployment (get a 70B deployment working with tp 2)
+Double Check that ShareGPT with Synthetic works
