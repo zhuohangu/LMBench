@@ -52,6 +52,14 @@ while true; do
     exit 1
   fi
 
+  kubectl get pods -o name | grep deployment-vllm | while read pod; do
+    echo "Checking logs for $pod for CUDA OOM"
+    if kubectl logs $pod --tail=50 | grep "CUDA out of memory" >/dev/null; then
+      echo "❗ CUDA OOM detected in $pod"
+      exit 1
+    fi
+  done
+
   if [ "$READY" -eq "$TOTAL" ] && [ "$TOTAL" -gt 0 ]; then
     echo "✅ All $TOTAL pods are running and ready."
     kubectl get pods
@@ -59,7 +67,7 @@ while true; do
   else
     echo "⏳ $READY/$TOTAL pods ready..."
     kubectl get pods
-    sleep 5
+    sleep 15
   fi
 done
 

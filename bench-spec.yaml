@@ -17,7 +17,7 @@ Serving:
     numCPUs: 4
     tensorParallelSize: 2
     hf_token: <YOUR_HF_TOKEN>
-    maxModelLen: 20000
+    maxModelLen: 16384
 
 Workload:
 
