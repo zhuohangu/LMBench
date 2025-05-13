@@ -51,7 +51,6 @@ gcloud beta container --project "$GCP_PROJECT" clusters create "$CLUSTER_NAME" \
   --zone "$ZONE" \
   --tier "standard" \
   --no-enable-basic-auth \
-  --cluster-version "1.32.3-gke.1927000" \
   --release-channel "regular" \
   --image-type "COS_CONTAINERD" \
   --disk-type "pd-balanced" \

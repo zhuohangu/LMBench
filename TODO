@@ -1,8 +1,10 @@
+DEBUG TP > 1 (get a 70B deployment working with TP 2)
+Add validation (e.g. modelSpec.numGPUs x modelSpec.numReplicas <= GKE.numGPUs)
 Finish latest-production-stack automation
 Migrate SGLang deployment
 Migrate Dynamo deployment
 Add vllm benchmark "serving" Workload
-Upgrade summarize.py with more stats from the vllm benchmarking
+Upgrade summarize.py with more stats from the vllm benchmarking (double check what the ITL calculation is actually doing)
 Create a Web Dashboard for results stored on LMBench CPU Runner
-Fix Tensor Parallel Deployment (get a 70B deployment working with tp 2)
-Double Check that ShareGPT with Synthetic works
+Double Check that Synthetic with ShareGPT works works
+

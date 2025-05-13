@@ -22,6 +22,14 @@ while true; do
   TOTAL=$(echo "$PODS" | tail -n +2 | wc -l)
   READY=$(echo "$PODS" | grep '1/1' | wc -l)
 
+  kubectl get pods -o name | grep deployment-vllm | while read pod; do
+    echo "Checking logs for $pod for CUDA OOM"
+    if kubectl logs $pod --tail=50 | grep "CUDA out of memory" >/dev/null; then
+      echo "❗ CUDA OOM detected in $pod"
+      exit 1
+    fi
+  done
+
   # TODO: uncomment once Helm is deubugged!
   Check for CrashLoopBackOff or other bad states
   if echo "$PODS" | grep -E 'CrashLoopBackOff|Error|ImagePullBackOff' > /dev/null; then
