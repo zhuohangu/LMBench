@@ -16,7 +16,7 @@ Infrastructure:
   # 16 GPUs -> 128 vCPUs, 1920GB memory
 
 Serving:
-  # Option 1: Helm-ProductionStack (Uses the latest helm chart from production-stack)
+  # Option 1: Helm-ProductionStack (Uses the latest helm repository from production-stack)
   # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
   Baseline: Helm-ProductionStack
   Helm-ProductionStack:
@@ -28,11 +28,11 @@ Serving:
     numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
     numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
     tensorParallelSize: 1 # please make sure tensorParallelSize <= numGPUs (this is the number of GPUs per replica)
-    hf_token: <YOUR_HF_TOKEN>
+    hf_token: <YOUR_HF_TOKEN> # no need to change if LMCacheGKE
     maxModelLen: 16384
 
   # Option 2: Latest-ProductionStack (Renders the latest k8s deployment directly from production-stack source code)
-  Baseline: Latest-ProductionStack
+  Baseline: Latest-ProductionStack # always vllm v1
   Latest-ProductionStack:
     useLMCache: true
     cpuSize: 60
@@ -42,8 +42,9 @@ Serving:
     numGPUs: 2
     numCPUs: 4
     tensorParallelSize: 2
-    hf_token: <YOUR_HF_TOKEN>
+    hf_token: <YOUR_HF_TOKEN> # no need to change if LMCacheGKE
     maxModelLen: 16384
+
   # Option 3: SGLang
   Baseline: SGLang
   SGLang:
@@ -111,14 +112,6 @@ Workload:
       CHAT_HISTORY: 256
       ANSWER_LEN: 20
       QPS: [1]
-
-    # commonly used combinations:
-    # NOTE: max model len here needs to be >= 23692
-    # NUM_ROUNDS: 20
-    # SYSTEM_PROMPT: 0
-    # CHAT_HISTORY: 256
-    # ANSWER_LEN: 20
-    # QPS: [1]
 
   Agentic:
     - NUM_USERS_WARMUP: 100

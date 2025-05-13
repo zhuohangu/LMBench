@@ -8,7 +8,7 @@ Serving:
   Baseline: Helm-ProductionStack
   Helm-ProductionStack:
     vLLM-Version: 1
-    useLMCache: true
+    useLMCache: false
     cpuSize: 60
     modelURL: meta-llama/Llama-3.1-70B-Instruct
     enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
