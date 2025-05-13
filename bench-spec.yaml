@@ -2,7 +2,7 @@ Infrastructure:
   # Location: NoBench # when pushing changes that should not run any workflows
   # Location: LocalMinikube
   Location: LMCacheGKE
-  numClusterGPUs: 4
+  numClusterGPUs: 8
 
 Serving:
   Baseline: Helm-ProductionStack
@@ -13,9 +13,9 @@ Serving:
     modelURL: meta-llama/Llama-3.1-70B-Instruct
     enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
     replicaCount: 1
-    numGPUs: 4
+    numGPUs: 8
     numCPUs: 10
-    tensorParallelSize: 4
+    tensorParallelSize: 8
     hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 

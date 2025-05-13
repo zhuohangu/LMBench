@@ -68,7 +68,7 @@ class Response:
 class RequestExecutor:
     """Thin wrapper over OpenAI async client that measures latency."""
 
-    def __init__(self, base_url: str, api_key: str = "vllm_xxxxxxxxxxxxx", model: str):
+    def __init__(self, base_url: str, api_key: str, model: str):
         # Ensure base_url ends with /v1 for vLLM
         # if not base_url.endswith('/v1'):
         #     base_url = base_url.rstrip('/') + '/v1'

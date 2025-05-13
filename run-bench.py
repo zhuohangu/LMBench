@@ -351,6 +351,7 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
 
 def synthetic_sharegpt_data_generation(model_url: str) -> None:
     """Generate ShareGPT data for synthetic workload."""
+    print("Generating ShareGPT data for synthetic workload...")
     data_gen_script_path = Path(__file__).parent / '3-workloads' / 'synthetic' / 'prepare_synthetic_sharegpt.sh'
     os.chmod(data_gen_script_path, 0o755)
     result = subprocess.run([str(data_gen_script_path), str(model_url)], check=True)
@@ -375,8 +376,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     CHAT_HISTORY = synthetic_config.get('CHAT_HISTORY')
     ANSWER_LEN = synthetic_config.get('ANSWER_LEN')
     USE_SHAREGPT = synthetic_config.get('USE_SHAREGPT', False)
-
-    if not run_synthetic.share_gpt_generated and USE_SHAREGPT:
+    if USE_SHAREGPT and (not run_synthetic.share_gpt_generated):
         synthetic_sharegpt_data_generation(MODEL_URL)
         run_synthetic.share_gpt_generated = True
 
