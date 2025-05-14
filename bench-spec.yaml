@@ -1,9 +1,9 @@
 Infrastructure:
-  Location: NoBench # when pushing changes that should not run any workflows
+  # Location: NoBench # when pushing changes that should not run any workflows
   # Location: LocalMinikube
-  # Location: LMCacheGKE
-  # numClusterGPUs: 2
-  # A100_VRAM: 80
+  Location: LMCacheGKE
+  numClusterGPUs: 2
+  A100_VRAM: 80
 
 Serving:
   Baseline: Helm-ProductionStack
