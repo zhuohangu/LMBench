@@ -39,19 +39,19 @@ if [ "$A100_VRAM" -eq 80 ]; then
   if [ "$NUM_GPUS" -eq 1 ]; then
     echo "Creating cluster with 1 A100 80GB, Stats should be 12 vCPUs, 170GB memory"
     MACHINE_TYPE="a2-ultragpu-1g" # 12 vCPUs, 170GB memory
-    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+    ACCELERATOR_TYPE="nvidia-a100-80gb"
   elif [ "$NUM_GPUS" -eq 2 ]; then
     echo "Creating cluster with 2 A100 80GB, Stats should be 24 vCPUs, 340GB memory"
     MACHINE_TYPE="a2-ultragpu-2g" # 24 vCPUs, 340GB memory
-    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+    ACCELERATOR_TYPE="nvidia-a100-80gb"
   elif [ "$NUM_GPUS" -eq 4 ]; then
     echo "Creating cluster with 4 A100 80GB, Stats should be 48 vCPUs, 680GB memory"
     MACHINE_TYPE="a2-ultragpu-4g" # 48 vCPUs, 680GB memory
-    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+    ACCELERATOR_TYPE="nvidia-a100-80gb"
   elif [ "$NUM_GPUS" -eq 8 ]; then
     echo "Creating cluster with 8 A100 80GB, Stats should be 96 vCPUs, 1360GB memory"
     MACHINE_TYPE="a2-ultragpu-8g" # 96 vCPUs, 1360GB memory
-    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+    ACCELERATOR_TYPE="nvidia-a100-80gb"
   else
     echo "Error: For A100 80GB, only 1, 2, 4, 8 GPUs are supported."
     exit 1

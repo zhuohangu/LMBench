@@ -17,7 +17,36 @@ KEY = None # MUST be set in run_workload()
 def read_bench_spec() -> Dict[str, Any]:
     """Read and parse the bench-spec.yaml file."""
     with open('bench-spec.yaml', 'r') as f:
-        return yaml.safe_load(f)
+        config = yaml.safe_load(f)
+
+        # validate that hf_token is not <YOUR_HF_TOKEN>
+        baseline = config['Serving'].get('Baseline')
+        if baseline == 'SGLang':
+            print("validating hf_token for SGLang baseline")
+            hf_token = single_config.get('hf_token')
+            if hf_token == '<YOUR_HF_TOKEN>':
+                raise ValueError("hf_token must be specified in bench-spec.yaml for SGLang baseline")
+        elif baseline == 'Helm-ProductionStack':
+            print("validating hf_token for Helm-ProductionStack baseline")
+            prodstack_config = config['Serving'].get('Helm-ProductionStack', {})
+            hf_token = prodstack_config.get('hf_token')
+            if hf_token == '<YOUR_HF_TOKEN>':
+                raise ValueError("hf_token must be specified in bench-spec.yaml for Helm-ProductionStack baseline")
+        elif baseline == 'Latest-ProductionStack':
+            print("validating hf_token for Latest-ProductionStack baseline")
+            latest_production_stack_config = config['Serving'].get('Latest-ProductionStack', {})
+            hf_token = latest_production_stack_config.get('hf_token')
+            if hf_token == '<YOUR_HF_TOKEN>':
+                raise ValueError("hf_token must be specified in bench-spec.yaml for Latest-ProductionStack baseline")
+        elif baseline == 'Dynamo':
+            print("validating hf_token for Dynamo baseline")
+            pass
+        else:
+            raise ValueError(f"Unsupported baseline: {baseline}")
+
+        print("Validated hf_token. run_bench.py now running")
+        return config
+
 
 # 1. Infrastructure Setup
 def setup_infrastructure(config: Dict[str, Any]) -> None:

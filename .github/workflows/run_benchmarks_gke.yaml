@@ -17,6 +17,21 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Check bench-spec.yaml configuration
+        shell: bash
+        run: |
+          if [ ! -f "bench-spec.yaml" ]; then
+            echo "::error:: bench-spec.yaml not found in project root."
+            exit 1
+          fi
+
+          if ! grep -q "Location: LMCacheGKE" bench-spec.yaml; then
+            echo "::warning:: Location: LMCacheGKE not found in bench-spec.yaml. Skipping benchmark run."
+            exit 0
+          fi
+
+          echo "✅ bench-spec.yaml correctly configured for LMCacheGKE."
+
       - name: Show runner info
         run: |
           echo "✅ Running on self-hosted runner!"
