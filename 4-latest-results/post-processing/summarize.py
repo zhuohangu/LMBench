@@ -5,6 +5,7 @@ import os
 import io
 import contextlib
 from datetime import datetime
+import yaml
 
 def ProcessSummary(
     df: pd.DataFrame,
@@ -54,26 +55,24 @@ def ProcessSummary(
         average_ratio = df['ratio'].mean()
 
         print("\n==================== Performance summary ======================")
-        print(f"  QPS: {qps:.4f} reqs/s")
         print(f"  Processing speed: {finished_qps:.4f} reqs/s")
-        print(f"  Requests on-the-fly: {pending_queries}")
         print(f"  Input tokens per second: {average_prefill_speed:.4f} tokens/s")
         print(f"  Output tokens per second: {average_generation_speed:.4f} tokens/s")
         print(f"  Average generation throughput (per request): {average_generation_speed_per_request:.4f} tokens/req/s")
         print(f"  Average TTFT: {average_ttft:.4f}s")
         print(f"  Average generation_time / generation_tokens (Inter-Token Latency): {average_ratio:.4f}")
-        print(f"  Time range: {start_time} - {end_time} ({total_time:.2f}s)")
+        print(f"  Time range: {total_time:.2f}s")
         print("===============================================================\n")
 
     return buf.getvalue()
 
-def process_output(filename: str):
+def process_output(filename: str, **kwargs):
     df = pd.read_csv(filename)
     summary_str = ProcessSummary(df, pending_queries=0)
 
     filename_without_parent_or_ext = os.path.splitext(os.path.basename(filename))[0]
     timestamp = datetime.now().strftime("%Y%m%d-%H%M")
-    results_path = f"4-latest-results/ttft-itl-{filename_without_parent_or_ext}-{timestamp}.results"
+    results_path = f"4-latest-results/{filename_without_parent_or_ext}-{timestamp}.results"
 
     # Read bench-spec.yaml and filter out lines with hf_token
     bench_spec_content = ""
@@ -86,16 +85,42 @@ def process_output(filename: str):
         print("bench-spec.yaml not found")
 
     with open(results_path, "w") as f:
+        # Write the timestamp
+        f.write(f"Timestamp: {timestamp}\n")
+        # Write the summary statistics
         f.write(summary_str)
+        # Write the specific workload for this set of statistics
+        f.write("\n==================== Workload config ======================\n")
+        for k, v in kwargs.items():
+            f.write(f"{k}: {v}\n")
+        f.write("===========================================================\n")
+        # Write the bench-spec.yaml content
         if bench_spec_content:
             f.write("\n==================== bench-spec.yaml ======================\n")
             f.write(bench_spec_content)
             f.write("\n===========================================================\n")
 
+    # Add the specific workload that was run (a subset of Workloads in bench-spec.yaml)
     print(f"Performance summary saved to {results_path}")
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python summarize.py <path_to_csv>")
+    if len(sys.argv) < 2:
+        print("Usage: python summarize.py <path_to_csv> [key=value ...]")
         sys.exit(1)
-    process_output(sys.argv[1])
+
+    filename = sys.argv[1]
+    raw_kwargs = sys.argv[2:]
+
+    def parse_value(val):
+        try:
+            return eval(val, {}, {})
+        except:
+            return val
+
+    kwargs = {}
+    for arg in raw_kwargs:
+        if "=" in arg:
+            key, val = arg.split("=", 1)
+            kwargs[key] = parse_value(val)
+
+    process_output(filename, **kwargs)

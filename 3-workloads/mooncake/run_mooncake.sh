@@ -51,4 +51,11 @@ chmod +x ./prepare_mooncake.sh
 for qps in "${QPS_VALUES[@]}"; do
     output_file="$../../4-latest-results/${KEY}_mooncake_output_${qps}.csv"
     run_mooncake "$qps" "$output_file"
+    python3 "../../4-latest-results/post-processing/summarize.py" \
+        "$output_file" \
+        NUM_ROUNDS="$NUM_ROUNDS" \
+        SYSTEM_PROMPT="$SYSTEM_PROMPT" \
+        CHAT_HISTORY="$CHAT_HISTORY" \
+        ANSWER_LEN="$ANSWER_LEN" \
+        QPS="$qps"
 done

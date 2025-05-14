@@ -212,6 +212,12 @@ def main():
         df.to_csv(args.output, index=False)
         logger.info(f"Results written to {args.output}")
 
+        # TODO: call the summarize script here
+        # Make sure to add extra arguments to the script including:
+        # LIMIT
+        # MIN_ROUNDS
+        # START_ROUND
+
         # Log summary
         log_summary(df)
     finally:

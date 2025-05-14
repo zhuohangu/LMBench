@@ -15,10 +15,13 @@ fi
 MODEL=$1
 BASE_URL=$2
 KEY=$3
+LIMIT=$4
+MIN_ROUNDS=$5
+START_ROUND=$6
 
 # If QPS values are provided, use them; otherwise use default
-if [[ $# -gt 3 ]]; then
-    QPS_VALUES=("${@:4}")
+if [[ $# -gt 6 ]]; then
+    QPS_VALUES=("${@:7}")
 else
     QPS_VALUES=(1.34)  # Default QPS value
 fi
@@ -59,4 +62,10 @@ for qps in "${QPS_VALUES[@]}"; do
     output_file="../../../4-latest-results/${KEY}_sharegpt_output_${qps}.csv"
     warm_up "$qps"
     run_benchmark "$qps" "$output_file"
+    python3 "../../../4-latest-results/post-processing/summarize.py" \
+        "$output_file" \
+        LIMIT="$LIMIT" \
+        MIN_ROUNDS="$MIN_ROUNDS" \
+        START_ROUND="$START_ROUND" \
+        QPS="$qps"
 done

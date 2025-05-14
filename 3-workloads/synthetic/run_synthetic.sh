@@ -21,7 +21,7 @@ NUM_ROUNDS=$6
 SYSTEM_PROMPT=$7
 CHAT_HISTORY=$8
 ANSWER_LEN=$9
-
+USE_SHAREGPT=${10:-false}
 # If QPS values are provided, use them; otherwise use default
 if [ $# -gt 9 ]; then
     QPS_VALUES=("${@:10}")
@@ -80,4 +80,14 @@ run_benchmark() {
 # Run benchmarks for each QPS value
 for qps in "${QPS_VALUES[@]}"; do
     run_benchmark "$qps"
+    python3 "../../4-latest-results/post-processing/summarize.py" \
+        "$output_file" \
+        NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
+        NUM_USERS="$NUM_USERS" \
+        NUM_ROUNDS="$NUM_ROUNDS" \
+        SYSTEM_PROMPT="$SYSTEM_PROMPT" \
+        CHAT_HISTORY="$CHAT_HISTORY" \
+        ANSWER_LEN="$ANSWER_LEN" \
+        QPS="$qps" \
+        USE_SHAREGPT="$USE_SHAREGPT"
 done

@@ -9,7 +9,7 @@ servingEngineSpec:
     requestCPU: 10
     requestMemory: "50Gi"
     requestGPU: 1
-    pvcStorage: "50Gi"
+    pvcStorage: "180Gi" # use 180/200 GB of the gpu node pool (need to change later when more than 1 serving engine)
     pvcAccessMode:
       - ReadWriteOnce
     vllmConfig:

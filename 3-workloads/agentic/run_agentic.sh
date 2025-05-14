@@ -80,4 +80,13 @@ run_benchmark() {
 # Run benchmarks for each new_user_interval value
 for interval in "${NEW_USER_INTERVALS[@]}"; do
     run_benchmark "$interval"
+    python3 "../../4-latest-results/post-processing/summarize.py" \
+            "$output_file" \
+            NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
+            NUM_AGENTS="$NUM_AGENTS" \
+            NUM_ROUNDS="$NUM_ROUNDS" \
+            SYSTEM_PROMPT="$SYSTEM_PROMPT" \
+            CHAT_HISTORY="$CHAT_HISTORY" \
+            ANSWER_LEN="$ANSWER_LEN" \
+            NEW_USER_INTERVAL="$interval"
 done

@@ -1,0 +1,1 @@
+Look at Dynamo Documentation for their kubernetes deployment guide!

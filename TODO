@@ -1,10 +1,11 @@
 DEBUG TP > 1 (get a 70B deployment working with TP 2)
+Create a Web Dashboard for results stored on LMBench CPU Runner
+Add CRD (Ask Roy)
 Add validation (e.g. modelSpec.numGPUs x modelSpec.numReplicas <= GKE.numGPUs)
-Finish latest-production-stack automation
+Finish latest-production-stack automation (git clone, template, kubectl apply)
 Migrate SGLang deployment
 Migrate Dynamo deployment
 Add vllm benchmark "serving" Workload
 Upgrade summarize.py with more stats from the vllm benchmarking (double check what the ITL calculation is actually doing)
-Create a Web Dashboard for results stored on LMBench CPU Runner
-Double Check that Synthetic with ShareGPT works works
-
+Double Check that Synthetic with ShareGPT works
+Support Running Multiple Serving Engines at once (need to refactor both production stacks)

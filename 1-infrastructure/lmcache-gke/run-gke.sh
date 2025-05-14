@@ -3,15 +3,19 @@
 set -x
 
 # Check if number of GPUs argument is provided
-if [ $# -ne 1 ]; then
-  echo "Usage: $0 <num_gpus>"
+if [ $# -lt 2 ]; then
+  echo "Usage: $0 <num_gpus> <vram_size>"
+  echo "  num_gpus: Number of GPUs (1, 2, 4, 8)"
+  echo "  vram_size: 40 for A100 40GB or 80 for A100 80GB"
   exit 1
 fi
 
 NUM_GPUS=$1
+A100_VRAM=$2
 
 CLUSTER_NAME="lm-bench"
 NODE_POOL_NAME="gpu-pool"
+# Quotas are by REGIONS so WLOG we choose us-central1-a zone in us-central1 region
 ZONE="us-central1-a"
 GCP_PROJECT=$(gcloud config get-value project)
 
@@ -20,33 +24,64 @@ if [ -z "$GCP_PROJECT" ]; then
   exit 1
 fi
 
-# Choose machine type and accelerator
-if [ "$NUM_GPUS" -eq 1 ]; then
-  echo "Creating cluster with 1 A100 40GB, Stats should be 12 vCPUs, 85GB memory"
-  MACHINE_TYPE="a2-highgpu-1g" # 12 vCPUs, 85GB memory
-  ACCELERATOR_TYPE="nvidia-tesla-a100"
-elif [ "$NUM_GPUS" -eq 2 ]; then
-  echo "Creating cluster with 2 A100 40GB, Stats should be 24 vCPUs, 170GB memory"
-  MACHINE_TYPE="a2-highgpu-2g" # 24 vCPUs, 170GB memory
-  ACCELERATOR_TYPE="nvidia-tesla-a100"
-elif [ "$NUM_GPUS" -eq 4 ]; then
-  echo "Creating cluster with 4 A100 40GB, Stats should be 48 vCPUs, 340GB memory"
-  MACHINE_TYPE="a2-highgpu-4g" # 48 vCPUs, 340GB memory
-  ACCELERATOR_TYPE="nvidia-tesla-a100"
-elif [ "$NUM_GPUS" -eq 8 ]; then
-  echo "Creating cluster with 8 A100 40GB, Stats should be 96 vCPUs, 680GB memory"
-  MACHINE_TYPE="a2-highgpu-8g" # 96 vCPUs, 680GB memory
-  ACCELERATOR_TYPE="nvidia-tesla-a100"
-elif [ "$NUM_GPUS" -eq 16 ]; then
-  echo "Creating cluster with 16 A100 80GB, Stats should be 128 vCPUs, 1920GB memory"
-  MACHINE_TYPE="a2-ultragpu-16g" # 128 vCPUs, 1920GB memory
-  ACCELERATOR_TYPE="nvidia-a100-80gb"
+# Set SPOT_FLAG based on A100_VRAM
+if [ "$A100_VRAM" -eq 80 ]; then
+  SPOT_FLAG="--spot"
+  echo "Using spot instances for A100 80GB"
 else
-  echo "Error: Only 1, 2, 4, 8 (A100 40GB) or 16 (A100 80GB) GPUs are supported."
-  exit 1
+  SPOT_FLAG=""
+  echo "Using regular (non-spot) instances for A100 40GB"
+fi
+
+# Choose machine type and accelerator based on VRAM size and number of GPUs
+if [ "$A100_VRAM" -eq 80 ]; then
+  # A100 80GB options (A2-UltraGPU)
+  if [ "$NUM_GPUS" -eq 1 ]; then
+    echo "Creating cluster with 1 A100 80GB, Stats should be 12 vCPUs, 170GB memory"
+    MACHINE_TYPE="a2-ultragpu-1g" # 12 vCPUs, 170GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+  elif [ "$NUM_GPUS" -eq 2 ]; then
+    echo "Creating cluster with 2 A100 80GB, Stats should be 24 vCPUs, 340GB memory"
+    MACHINE_TYPE="a2-ultragpu-2g" # 24 vCPUs, 340GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+  elif [ "$NUM_GPUS" -eq 4 ]; then
+    echo "Creating cluster with 4 A100 80GB, Stats should be 48 vCPUs, 680GB memory"
+    MACHINE_TYPE="a2-ultragpu-4g" # 48 vCPUs, 680GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+  elif [ "$NUM_GPUS" -eq 8 ]; then
+    echo "Creating cluster with 8 A100 80GB, Stats should be 96 vCPUs, 1360GB memory"
+    MACHINE_TYPE="a2-ultragpu-8g" # 96 vCPUs, 1360GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100-80gb"
+  else
+    echo "Error: For A100 80GB, only 1, 2, 4, 8 GPUs are supported."
+    exit 1
+  fi
+else
+  # A100 40GB options (A2-HighGPU) - original configuration
+  if [ "$NUM_GPUS" -eq 1 ]; then
+    echo "Creating cluster with 1 A100 40GB, Stats should be 12 vCPUs, 85GB memory"
+    MACHINE_TYPE="a2-highgpu-1g" # 12 vCPUs, 85GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100"
+  elif [ "$NUM_GPUS" -eq 2 ]; then
+    echo "Creating cluster with 2 A100 40GB, Stats should be 24 vCPUs, 170GB memory"
+    MACHINE_TYPE="a2-highgpu-2g" # 24 vCPUs, 170GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100"
+  elif [ "$NUM_GPUS" -eq 4 ]; then
+    echo "Creating cluster with 4 A100 40GB, Stats should be 48 vCPUs, 340GB memory"
+    MACHINE_TYPE="a2-highgpu-4g" # 48 vCPUs, 340GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100"
+  elif [ "$NUM_GPUS" -eq 8 ]; then
+    echo "Creating cluster with 8 A100 40GB, Stats should be 96 vCPUs, 680GB memory"
+    MACHINE_TYPE="a2-highgpu-8g" # 96 vCPUs, 680GB memory
+    ACCELERATOR_TYPE="nvidia-tesla-a100"
+  else
+    echo "Error: For A100 40GB, only 1, 2, 4, or 8 GPUs are supported."
+    exit 1
+  fi
 fi
 
 # Create cluster with no nodes
+# the default node pool does not need that much disk space (the gpu pool does though)
 gcloud beta container --project "$GCP_PROJECT" clusters create "$CLUSTER_NAME" \
   --zone "$ZONE" \
   --tier "standard" \
@@ -54,7 +89,7 @@ gcloud beta container --project "$GCP_PROJECT" clusters create "$CLUSTER_NAME" \
   --release-channel "regular" \
   --image-type "COS_CONTAINERD" \
   --disk-type "pd-balanced" \
-  --disk-size "100" \
+  --disk-size "30" \
   --metadata disable-legacy-endpoints=true \
   --scopes "https://www.googleapis.com/auth/devstorage.read_only,https://www.googleapis.com/auth/logging.write,https://www.googleapis.com/auth/monitoring,https://www.googleapis.com/auth/servicecontrol,https://www.googleapis.com/auth/service.management.readonly,https://www.googleapis.com/auth/trace.append" \
   --machine-type "e2-medium" \
@@ -85,6 +120,7 @@ echo "Checking node pools after cluster creation..."
 gcloud container node-pools list --cluster "$CLUSTER_NAME" --zone "$ZONE"
 
 # Create GPU node pool (for the serving engines)
+# Loading models like Llama-3.1-70B-Instruct requires 140GB of disk space
 gcloud container node-pools create gpu-pool \
   --cluster "$CLUSTER_NAME" \
   --zone "$ZONE" \
@@ -93,18 +129,10 @@ gcloud container node-pools create gpu-pool \
   --num-nodes "1" \
   --image-type=COS_CONTAINERD \
   --enable-autoupgrade \
-  --enable-autorepair
-
-# Debugging: Manual creation of gpu-pool
-# gcloud container node-pools create gpu-pool \
-#   --cluster "lm-bench" \
-#   --zone "us-central1-a" \
-#   --machine-type "a2-highgpu-2g" \
-#   --accelerator type="nvidia-tesla-a100",count="2" \
-#   --num-nodes "1" \
-#   --image-type=COS_CONTAINERD \
-#   --enable-autoupgrade \
-#   --enable-autorepair
+  --enable-autorepair \
+  --disk-type "pd-balanced" \
+  --disk-size "220" \
+  $SPOT_FLAG
 
 echo "Checking node pools after gpu-pool creation..."
 gcloud container node-pools list --cluster "$CLUSTER_NAME" --zone "$ZONE"
@@ -121,6 +149,11 @@ gcloud container node-pools list --cluster "$CLUSTER_NAME" --zone "$ZONE"
 
 echo "Getting cluster credentials..."
 gcloud container clusters get-credentials "$CLUSTER_NAME" --zone "$ZONE"
+
+# Wait for nodes to be ready (without making things too complicated)
+echo "Waiting for nodes to be ready..."
+sleep 30
+kubectl get nodes
 
 echo "Labeling nodes in gpu and cpu pools..."
 # Label GPU nodes

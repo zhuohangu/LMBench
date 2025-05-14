@@ -67,9 +67,10 @@ def start_gke_cluster(config: Dict[str, Any]) -> None:
 
     # Execute the script
     num_gpus = config['Infrastructure'].get('numClusterGPUs')
+    a100_vram = config['Infrastructure'].get('A100_VRAM', "40")
     if not num_gpus:
         raise ValueError("numClusterGPUs must be specified in bench-spec.yaml for GKE cluster setup")
-    result = subprocess.run([str(script_path), str(num_gpus)], check=True)
+    result = subprocess.run([str(script_path), str(num_gpus), str(a100_vram)], check=True)
 
     if result.returncode == 0:
         print("GKE cluster setup completed successfully")
@@ -325,8 +326,6 @@ def sharegpt_data_generation(sharegpt_config: Dict[str, Any]) -> None:
         raise RuntimeError("Failed to generate ShareGPT data")
 
 def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
-    # should be a list
-    qps_values = sharegpt_config.get('QPS')
     workload_exec_script_path = Path(__file__).parent / '3-workloads' / 'sharegpt' / 'workload_execution' / 'run-sharegpt.sh'
 
     if not workload_exec_script_path.exists():
@@ -338,6 +337,13 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
     cmd.extend([str(MODEL_URL)])
     cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
     cmd.extend([KEY]) # the key that will be embedded in the filenames of the results
+    limit = sharegpt_config.get('LIMIT')
+    min_rounds = sharegpt_config.get('MIN_ROUNDS')
+    start_round = sharegpt_config.get('START_ROUND')
+    qps_values = sharegpt_config.get('QPS')
+    cmd.extend([str(limit)])
+    cmd.extend([str(min_rounds)])
+    cmd.extend([str(start_round)])
     cmd.extend([str(qps) for qps in qps_values])
 
     # Execute the workload
@@ -345,7 +351,7 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
     result = subprocess.run(cmd, check=True)
 
     if result.returncode == 0:
-        print("ShareGPT workload completed successfully into 4-latest-results/sharegpt-summary.csv")
+        print("ShareGPT workloads completed successfully")
     else:
         raise RuntimeError("Failed to run ShareGPT workload")
 
@@ -390,6 +396,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     cmd.extend([str(MODEL_URL)])
     cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
     cmd.extend([KEY]) # the key that will be embedded in the filenames of the results
+
     """
     MODEL=$1
     BASE_URL=$2
@@ -402,6 +409,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     SYSTEM_PROMPT=$7
     CHAT_HISTORY=$8
     ANSWER_LEN=$9
+    USE_SHAREGPT=$10
     """
     cmd.extend([str(NUM_USERS_WARMUP)])
     cmd.extend([str(NUM_USERS)])
@@ -417,7 +425,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     result = subprocess.run(cmd, check=True)
 
     if result.returncode == 0:
-        print("Synthetic workload completed successfully into 4-latest-results/synthetic-summary.csv")
+        print("Synthetic workloads completed successfully")
     else:
         raise RuntimeError("Failed to run synthetic workload")
 
@@ -449,7 +457,7 @@ def run_mooncake(mooncake_config: Dict[str, Any]) -> None:
     result = subprocess.run(cmd, check=True)
 
     if result.returncode == 0:
-        print("Mooncake workload completed successfully into 4-latest-results/mooncake-summary.csv")
+        print("Mooncake workloads completed successfully")
     else:
         raise RuntimeError("Failed to run Mooncake workload")
 
@@ -468,8 +476,9 @@ def run_agentic(agentic_config: Dict[str, Any]) -> None:
     SYSTEM_PROMPT=$7
     CHAT_HISTORY=$8
     ANSWER_LEN=$9
+    NEW_USER_INTERVALS=$10
     """
-    qps_values = agentic_config.get('QPS')
+    NEW_USER_INTERVALS = agentic_config.get('NEW_USER_INTERVALS')
     NUM_USERS_WARMUP = agentic_config.get('NUM_USERS_WARMUP')
     NUM_AGENTS = agentic_config.get('NUM_AGENTS')
     NUM_ROUNDS = agentic_config.get('NUM_ROUNDS')
@@ -493,40 +502,16 @@ def run_agentic(agentic_config: Dict[str, Any]) -> None:
     cmd.extend([str(SYSTEM_PROMPT)])
     cmd.extend([str(CHAT_HISTORY)])
     cmd.extend([str(ANSWER_LEN)])
+    cmd.extend([str(interval) for interval in NEW_USER_INTERVALS])
 
     # Execute the workload
     print(f"Running Agentic workload with parameters: {' '.join(cmd)}")
     result = subprocess.run(cmd, check=True)
 
     if result.returncode == 0:
-        print("Agentic workload completed successfully into 4-latest-results/agentic-summary.csv")
+        print("Agentic workloads completed successfully")
     else:
         raise RuntimeError("Failed to run Agentic workload")
-
-def post_processing() -> None:
-    """
-    Post-process the verbose results (summarize TTFT and ITL)
-    """
-    # run 4-latest-results/post-processing/summarize.py
-    summarize_script_path = Path(__file__).parent / '4-latest-results' / 'post-processing' / 'summarize.py'
-    os.chmod(summarize_script_path, 0o755)
-    # find all .csv files in 4-latest-results/
-    csv_files = Path(__file__).parent.joinpath("4-latest-results").rglob("*.csv")
-
-    for csv_path in csv_files:
-        print(f"Post-processing {csv_path}...")
-        cmd = ['python3', str(summarize_script_path), str(csv_path)]
-        result = subprocess.run(cmd, check=True)
-        if result.returncode == 0:
-            print(f"Post-processing completed for {csv_path}")
-        else:
-            raise RuntimeError(f"Failed to post-process {csv_path}")
-
-    if result.returncode == 0:
-        print("Workload post-processing completed successfully")
-    else:
-        raise RuntimeError("Failed to run workload post-processing")
-
 def clean_up() -> None:
     """
     Does not need to specified in the bench-spec.yaml configuration
@@ -568,10 +553,6 @@ def main() -> None:
         print(f"Injecting HF token: {args.hf_token}")
         global HF_TOKEN
         HF_TOKEN = args.hf_token
-    if args.port_forward_url:
-        print(f"Injecting port-forward URL: {args.port_forward_url}")
-        global PORT_FORWARD_URL
-        PORT_FORWARD_URL = args.port_forward_url
     if args.key:
         print(f"Injecting key: {args.key}")
         global KEY
@@ -593,9 +574,6 @@ def main() -> None:
 
         # 3. Run the specified workload
         run_workload(config)
-
-        # 4. Post-process the verbose results (summarize TTFT and ITL)
-        post_processing()
 
     except Exception as e:
         print(f"Benchmarking Error: {str(e)}")
