@@ -41,7 +41,7 @@ Workload:
   #     START_ROUND: 0
   #     QPS: [1.34, 2]
 
-  # LMCacheSynthetic:
+  LMCacheSynthetic:
   #   # long input long output:
   #   - NUM_USERS_WARMUP: 750
   #     NUM_USERS: 350
