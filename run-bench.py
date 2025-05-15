@@ -362,6 +362,8 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
 
     os.chmod(workload_exec_script_path, 0o755)
 
+    global MODEL_URL
+
     cmd = [str(workload_exec_script_path)]
     cmd.extend([str(MODEL_URL)])
     cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
@@ -384,12 +386,13 @@ def sharegpt_run_workload(sharegpt_config: Dict[str, Any]) -> None:
     else:
         raise RuntimeError("Failed to run ShareGPT workload")
 
-def synthetic_sharegpt_data_generation(model_url: str) -> None:
+def synthetic_sharegpt_data_generation() -> None:
     """Generate ShareGPT data for synthetic workload."""
     print("Generating ShareGPT data for synthetic workload...")
     data_gen_script_path = Path(__file__).parent / '3-workloads' / 'synthetic' / 'prepare_synthetic_sharegpt.sh'
     os.chmod(data_gen_script_path, 0o755)
-    result = subprocess.run([str(data_gen_script_path), str(model_url)], check=True)
+    global MODEL_URL
+    result = subprocess.run([str(data_gen_script_path), str(MODEL_URL)], check=True)
 
     if result.returncode == 0:
         print("ShareGPT data generation completed successfully into 4-latest-results/sharegpt-data.json")
@@ -403,6 +406,8 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     if not hasattr(run_synthetic, 'share_gpt_generated'):
         run_synthetic.share_gpt_generated = False
 
+    global MODEL_URL
+
     qps_values = synthetic_config.get('QPS')
     NUM_USERS_WARMUP = synthetic_config.get('NUM_USERS_WARMUP')
     NUM_USERS = synthetic_config.get('NUM_USERS')
@@ -412,7 +417,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     ANSWER_LEN = synthetic_config.get('ANSWER_LEN')
     USE_SHAREGPT = synthetic_config.get('USE_SHAREGPT', False)
     if USE_SHAREGPT and (not run_synthetic.share_gpt_generated):
-        synthetic_sharegpt_data_generation(MODEL_URL)
+        synthetic_sharegpt_data_generation()
         run_synthetic.share_gpt_generated = True
 
     workload_exec_script_path = Path(__file__).parent / '3-workloads' / 'synthetic' / 'run_synthetic.sh'
@@ -472,6 +477,8 @@ def run_mooncake(mooncake_config: Dict[str, Any]) -> None:
 
     os.chmod(workload_exec_script_path, 0o755)
 
+    global MODEL_URL
+
     cmd = [str(workload_exec_script_path)]
     cmd.extend([str(MODEL_URL)])
     cmd.extend(["http://localhost:30080/v1/"]) # the base URL when serving with production stack
@@ -520,6 +527,8 @@ def run_agentic(agentic_config: Dict[str, Any]) -> None:
         raise FileNotFoundError(f"Agentic script not found at {workload_exec_script_path}")
 
     os.chmod(workload_exec_script_path, 0o755)
+
+    global MODEL_URL
 
     cmd = [str(workload_exec_script_path)]
     cmd.extend([str(MODEL_URL)])
