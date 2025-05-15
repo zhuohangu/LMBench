@@ -80,8 +80,11 @@ run_benchmark() {
 # Run benchmarks for each QPS value
 for qps in "${QPS_VALUES[@]}"; do
     run_benchmark "$qps"
+    local output_file="../../4-latest-results/${KEY}_synthetic_output_${qps}.csv"
     python3 "../../4-latest-results/post-processing/summarize.py" \
         "$output_file" \
+        KEY="$KEY" \
+        WORKLOAD="synthetic" \
         NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
         NUM_USERS="$NUM_USERS" \
         NUM_ROUNDS="$NUM_ROUNDS" \

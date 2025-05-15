@@ -80,8 +80,11 @@ run_benchmark() {
 # Run benchmarks for each new_user_interval value
 for interval in "${NEW_USER_INTERVALS[@]}"; do
     run_benchmark "$interval"
+    local output_file="../../4-latest-results/${KEY}_agentic_output_${interval}.csv"
     python3 "../../4-latest-results/post-processing/summarize.py" \
             "$output_file" \
+            KEY="$KEY" \
+            WORKLOAD="agentic" \
             NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
             NUM_AGENTS="$NUM_AGENTS" \
             NUM_ROUNDS="$NUM_ROUNDS" \

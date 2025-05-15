@@ -64,6 +64,8 @@ for qps in "${QPS_VALUES[@]}"; do
     run_benchmark "$qps" "$output_file"
     python3 "../../../4-latest-results/post-processing/summarize.py" \
         "$output_file" \
+        KEY="$KEY" \
+        WORKLOAD="sharegpt" \
         LIMIT="$LIMIT" \
         MIN_ROUNDS="$MIN_ROUNDS" \
         START_ROUND="$START_ROUND" \

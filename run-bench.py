@@ -131,7 +131,7 @@ def setup_baseline(config: Dict[str, Any]) -> None:
         # TODO
         pass
     elif baseline == 'Helm-ProductionStack':
-        KEY = 'helm-production-stack'
+        KEY = 'stack'
         prodstack_config = config['Serving'].get('Helm-ProductionStack', {})
         model_url = prodstack_config.get('modelURL')
         hf_token = prodstack_config.get('hf_token')
@@ -145,7 +145,7 @@ def setup_baseline(config: Dict[str, Any]) -> None:
         # helm installation
         helm_installation(prodstack_config)
     elif baseline == 'Latest-ProductionStack':
-        KEY = 'latest-production-stack'
+        KEY = 'stack'
         latest_production_stack_config = config['Serving'].get('Latest-ProductionStack', {})
         model_url = latest_production_stack_config.get('modelURL')
         hf_token = latest_production_stack_config.get('hf_token')

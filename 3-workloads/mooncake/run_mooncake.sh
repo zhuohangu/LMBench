@@ -53,6 +53,8 @@ for qps in "${QPS_VALUES[@]}"; do
     run_mooncake "$qps" "$output_file"
     python3 "../../4-latest-results/post-processing/summarize.py" \
         "$output_file" \
+        KEY="$KEY" \
+        WORKLOAD="mooncake" \
         NUM_ROUNDS="$NUM_ROUNDS" \
         SYSTEM_PROMPT="$SYSTEM_PROMPT" \
         CHAT_HISTORY="$CHAT_HISTORY" \
