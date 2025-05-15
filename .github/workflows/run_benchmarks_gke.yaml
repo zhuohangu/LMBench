@@ -91,13 +91,6 @@ jobs:
           echo "✅ Running benchmark script..."
           python run-bench.py
 
-      # eventually we will use /srv/runner-db as a database for the dashboard
-      # results files include TTFT, ITL, and the bench-spec.yaml content that ran the benchmark
-      - name: Save .results files to local DB folder outside workspace
-        run: |
-          find 4-latest-results/ -name '*.results' -exec cp {} ~/srv/runner-db/ \;
-          echo "✅ Saved .results files to ~/srv/runner-db/"
-
       - name: Upload .results artifacts to GitHub
         uses: actions/upload-artifact@v4
         with:

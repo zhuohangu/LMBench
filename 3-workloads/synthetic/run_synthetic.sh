@@ -21,10 +21,10 @@ NUM_ROUNDS=$6
 SYSTEM_PROMPT=$7
 CHAT_HISTORY=$8
 ANSWER_LEN=$9
-USE_SHAREGPT=${10:-false}
+USE_SHAREGPT=$10
 # If QPS values are provided, use them; otherwise use default
-if [ $# -gt 9 ]; then
-    QPS_VALUES=("${@:10}")
+if [ $# -gt 10 ]; then
+    QPS_VALUES=("${@:11}")
 else
     QPS_VALUES=(0.7)  # Default QPS value
 fi
@@ -80,7 +80,7 @@ run_benchmark() {
 # Run benchmarks for each QPS value
 for qps in "${QPS_VALUES[@]}"; do
     run_benchmark "$qps"
-    local output_file="../../4-latest-results/${KEY}_synthetic_output_${qps}.csv"
+    output_file="../../4-latest-results/${KEY}_synthetic_output_${qps}.csv"
     python3 "../../4-latest-results/post-processing/summarize.py" \
         "$output_file" \
         KEY="$KEY" \

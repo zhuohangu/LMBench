@@ -100,8 +100,16 @@ def process_output(filename: str, **kwargs):
             f.write(bench_spec_content)
             f.write("\n===========================================================\n")
 
-    # Add the specific workload that was run (a subset of Workloads in bench-spec.yaml)
     print(f"Performance summary saved to {results_path}")
+
+    # Save a copy of the results file to ~/srv/runner-db/
+    runner_db_path = os.path.expanduser("~/srv/runner-db/")
+    os.makedirs(runner_db_path, exist_ok=True)
+    runner_db_file = os.path.join(runner_db_path, f"{filename_without_parent_or_ext}-{timestamp}.results")
+
+    # Copy the contents to the new location
+    with open(results_path, "r") as src, open(runner_db_file, "w") as dst:
+        dst.write(src.read())
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
