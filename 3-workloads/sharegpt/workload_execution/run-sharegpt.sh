@@ -2,6 +2,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../../" && pwd )"
 cd "$SCRIPT_DIR"
 
 # Set the path to the 4-latest-results directory
@@ -62,12 +63,17 @@ for qps in "${QPS_VALUES[@]}"; do
     output_file="../../../4-latest-results/${KEY}_sharegpt_output_${qps}.csv"
     warm_up "$qps"
     run_benchmark "$qps" "$output_file"
-    python3 "../../../4-latest-results/post-processing/summarize.py" \
-        "$output_file" \
+
+    # Change to project root before running summarize.py
+    cd "$PROJECT_ROOT"
+    python3 "4-latest-results/post-processing/summarize.py" \
+        "${output_file#../../../}" \
         KEY="$KEY" \
         WORKLOAD="sharegpt" \
         LIMIT="$LIMIT" \
         MIN_ROUNDS="$MIN_ROUNDS" \
         START_ROUND="$START_ROUND" \
         QPS="$qps"
+    # Change back to script directory
+    cd "$SCRIPT_DIR"
 done

@@ -2,6 +2,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../.." && pwd )"
 cd "$SCRIPT_DIR"
 
 if [[ $# -lt 3 ]]; then
@@ -80,9 +81,11 @@ run_benchmark() {
 # Run benchmarks for each QPS value
 for qps in "${QPS_VALUES[@]}"; do
     run_benchmark "$qps"
-    output_file="../../4-latest-results/${KEY}_synthetic_output_${qps}.csv"
-    python3 "../../4-latest-results/post-processing/summarize.py" \
-        "$output_file" \
+
+    # Change to project root before running summarize.py
+    cd "$PROJECT_ROOT"
+    python3 "4-latest-results/post-processing/summarize.py" \
+        "${KEY}_synthetic_output_${qps}.csv" \
         KEY="$KEY" \
         WORKLOAD="synthetic" \
         NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
@@ -93,4 +96,7 @@ for qps in "${QPS_VALUES[@]}"; do
         ANSWER_LEN="$ANSWER_LEN" \
         QPS="$qps" \
         USE_SHAREGPT="$USE_SHAREGPT"
+
+    # Change back to script directory
+    cd "$SCRIPT_DIR"
 done

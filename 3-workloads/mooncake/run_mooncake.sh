@@ -2,6 +2,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../" && pwd )"
 cd "$SCRIPT_DIR"
 
 if [[ $# -ne 7 ]]; then
@@ -49,10 +50,13 @@ chmod +x ./prepare_mooncake.sh
 
 # Run benchmarks for the determined QPS values
 for qps in "${QPS_VALUES[@]}"; do
-    output_file="$../../4-latest-results/${KEY}_mooncake_output_${qps}.csv"
+    output_file="../../4-latest-results/${KEY}_mooncake_output_${qps}.csv"
     run_mooncake "$qps" "$output_file"
-    python3 "../../4-latest-results/post-processing/summarize.py" \
-        "$output_file" \
+
+    # Change to project root before running summarize.py
+    cd "$PROJECT_ROOT"
+    python3 "4-latest-results/post-processing/summarize.py" \
+        "${output_file#../../}" \
         KEY="$KEY" \
         WORKLOAD="mooncake" \
         NUM_ROUNDS="$NUM_ROUNDS" \
@@ -60,4 +64,7 @@ for qps in "${QPS_VALUES[@]}"; do
         CHAT_HISTORY="$CHAT_HISTORY" \
         ANSWER_LEN="$ANSWER_LEN" \
         QPS="$qps"
+
+    # Change back to script directory
+    cd "$SCRIPT_DIR"
 done

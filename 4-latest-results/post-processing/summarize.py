@@ -82,7 +82,7 @@ def process_output(filename: str, **kwargs):
                 line for line in spec_file if "hf_token" not in line
             )
     else:
-        print("bench-spec.yaml not found")
+        print("bench-spec.yaml not found in summarize.py")
 
     with open(results_path, "w") as f:
         # Write the timestamp

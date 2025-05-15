@@ -2,6 +2,7 @@
 
 # Get the directory where this script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+PROJECT_ROOT="$( cd "$SCRIPT_DIR/../../" && pwd )"
 cd "$SCRIPT_DIR"
 
 if [[ $# -lt 3 ]]; then
@@ -22,7 +23,7 @@ SYSTEM_PROMPT=$7
 CHAT_HISTORY=$8
 ANSWER_LEN=$9
 
-# Optional QPS-like values (we’ll use as new-user-intervals here)
+# Optional QPS-like values (we'll use as new-user-intervals here)
 if [ $# -gt 9 ]; then
     NEW_USER_INTERVALS=("${@:10}")
 else
@@ -80,16 +81,22 @@ run_benchmark() {
 # Run benchmarks for each new_user_interval value
 for interval in "${NEW_USER_INTERVALS[@]}"; do
     run_benchmark "$interval"
-    local output_file="../../4-latest-results/${KEY}_agentic_output_${interval}.csv"
-    python3 "../../4-latest-results/post-processing/summarize.py" \
-            "$output_file" \
-            KEY="$KEY" \
-            WORKLOAD="agentic" \
-            NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
-            NUM_AGENTS="$NUM_AGENTS" \
-            NUM_ROUNDS="$NUM_ROUNDS" \
-            SYSTEM_PROMPT="$SYSTEM_PROMPT" \
-            CHAT_HISTORY="$CHAT_HISTORY" \
-            ANSWER_LEN="$ANSWER_LEN" \
-            NEW_USER_INTERVAL="$interval"
+    output_file="../../4-latest-results/${KEY}_agentic_output_${interval}.csv"
+
+    # Change to project root before running summarize.py
+    cd "$PROJECT_ROOT"
+    python3 "4-latest-results/post-processing/summarize.py" \
+        "${output_file#../../}" \
+        KEY="$KEY" \
+        WORKLOAD="agentic" \
+        NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
+        NUM_AGENTS="$NUM_AGENTS" \
+        NUM_ROUNDS="$NUM_ROUNDS" \
+        SYSTEM_PROMPT="$SYSTEM_PROMPT" \
+        CHAT_HISTORY="$CHAT_HISTORY" \
+        ANSWER_LEN="$ANSWER_LEN" \
+        NEW_USER_INTERVAL="$interval"
+
+    # Change back to script directory
+    cd "$SCRIPT_DIR"
 done

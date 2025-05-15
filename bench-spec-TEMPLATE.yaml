@@ -9,10 +9,10 @@ Infrastructure:
   Location: LMCacheGKE
   numClusterGPUs: 1
   A100_VRAM: 40 # either 40 or 80 (80 is difficult to obtain on GCP so will run as "spot" and may fail)
-  # 1 GPU -> 12 vCPUs, 85GB memory
-  # 2 GPUs -> 24 vCPUs, 170GB memory
-  # 4 GPUs -> 48 vCPUs, 340GB memory
-  # 8 GPUs -> 96 vCPUs, 680GB memory
+  # 1 GPU -> 12 vCPUs, 85GB RAM
+  # 2 GPUs -> 24 vCPUs, 170GB RAM
+  # 4 GPUs -> 48 vCPUs, 340GB RAM
+  # 8 GPUs -> 96 vCPUs, 680GB RAM
 
   # NOTE: from experience, 4x 40GB A100s with TP 4 cannot run a llama 3.1 70B model with 8192 max_seq_len
   # so we recommend using 8x 40GB A100s with TP 8 for llama 3.1 70B
@@ -31,7 +31,7 @@ Serving:
     numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
     numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
     tensorParallelSize: 1 # please make sure tensorParallelSize <= numGPUs (this is the number of GPUs per replica)
-    hf_token: <YOUR_HF_TOKEN>
+    hf_token: <YOUR_HF_TOKEN> # leave as <YOUR_HF_TOKEN> if running on LMCacheGKE
     maxModelLen: 16384
 
   # Option 2: Latest-ProductionStack (Renders the latest k8s deployment directly from production-stack source code)
@@ -45,7 +45,7 @@ Serving:
     numGPUs: 2
     numCPUs: 4
     tensorParallelSize: 2
-    hf_token: <YOUR_HF_TOKEN>
+    hf_token: <YOUR_HF_TOKEN> # leave as <YOUR_HF_TOKEN> if running on LMCacheGKE
     maxModelLen: 16384
 
   # Option 3: SGLang
