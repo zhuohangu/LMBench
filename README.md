@@ -1,6 +1,10 @@
 # LMBench
 
-Clone to run on your local machine or submit a PR to run it on a LMCache GPU runner (will trigger on push).
+Online Kubernetes-based benchmarking.
+
+# How to Use
+
+Clone to run on your local machine or submit a PR (or directly push if you have access) to run it on a LMCache GPU runner (will trigger on push).
 
 # Running a benchmark
 
