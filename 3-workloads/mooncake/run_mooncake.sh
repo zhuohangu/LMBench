@@ -56,7 +56,7 @@ for qps in "${QPS_VALUES[@]}"; do
     # Change to project root before running summarize.py
     cd "$PROJECT_ROOT"
     python3 "4-latest-results/post-processing/summarize.py" \
-        "${output_file#../../}" \
+        "4-latest-results/${output_file#../../}" \
         KEY="$KEY" \
         WORKLOAD="mooncake" \
         NUM_ROUNDS="$NUM_ROUNDS" \

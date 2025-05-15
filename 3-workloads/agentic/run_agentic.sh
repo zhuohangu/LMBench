@@ -86,7 +86,7 @@ for interval in "${NEW_USER_INTERVALS[@]}"; do
     # Change to project root before running summarize.py
     cd "$PROJECT_ROOT"
     python3 "4-latest-results/post-processing/summarize.py" \
-        "${output_file#../../}" \
+        "4-latest-results/${output_file#../../}" \
         KEY="$KEY" \
         WORKLOAD="agentic" \
         NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \

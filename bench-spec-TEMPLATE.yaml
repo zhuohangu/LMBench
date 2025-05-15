@@ -31,7 +31,7 @@ Serving:
     numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
     numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
     tensorParallelSize: 1 # please make sure tensorParallelSize <= numGPUs (this is the number of GPUs per replica)
-    hf_token: <YOUR_HF_TOKEN> # leave as <YOUR_HF_TOKEN> if running on LMCacheGKE
+    hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
   # Option 2: Latest-ProductionStack (Renders the latest k8s deployment directly from production-stack source code)
@@ -45,7 +45,7 @@ Serving:
     numGPUs: 2
     numCPUs: 4
     tensorParallelSize: 2
-    hf_token: <YOUR_HF_TOKEN> # leave as <YOUR_HF_TOKEN> if running on LMCacheGKE
+    hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
   # Option 3: SGLang

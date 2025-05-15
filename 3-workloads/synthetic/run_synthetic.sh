@@ -84,8 +84,9 @@ for qps in "${QPS_VALUES[@]}"; do
 
     # Change to project root before running summarize.py
     cd "$PROJECT_ROOT"
+
     python3 "4-latest-results/post-processing/summarize.py" \
-        "${KEY}_synthetic_output_${qps}.csv" \
+        "4-latest-results/${KEY}_synthetic_output_${qps}.csv" \
         KEY="$KEY" \
         WORKLOAD="synthetic" \
         NUM_USERS_WARMUP="$NUM_USERS_WARMUP" \
@@ -100,3 +101,17 @@ for qps in "${QPS_VALUES[@]}"; do
     # Change back to script directory
     cd "$SCRIPT_DIR"
 done
+
+# Debugging:
+# python3 "4-latest-results/post-processing/summarize.py" \
+#     "4-latest-results/stack_synthetic_output_0.7.csv" \
+#     KEY="stack" \
+#     WORKLOAD="synthetic" \
+#     NUM_USERS_WARMUP="750" \
+#     NUM_USERS="350" \
+#     NUM_ROUNDS="20" \
+#     SYSTEM_PROMPT="0" \
+#     CHAT_HISTORY="20000" \
+#     ANSWER_LEN="1000" \
+#     QPS="0.7" \
+#     USE_SHAREGPT="false"

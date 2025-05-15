@@ -22,12 +22,6 @@ def ProcessSummary(
         else:
             launched_queries = len(df)
 
-        print(
-            f"Launched queries: {launched_queries}, "
-            f"pending queries: {pending_queries}, "
-            f"finished queries: {len(df)}"
-        )
-
         if qps is None:
             qps = 0.0
 
@@ -55,6 +49,12 @@ def ProcessSummary(
         average_ratio = df['ratio'].mean()
 
         print("\n==================== Performance summary ======================")
+        print(
+            f"   Launched queries: {launched_queries}, "
+            f"pending queries: {pending_queries}, "
+            f"finished queries: {len(df)}"
+        )
+
         print(f"  Processing speed: {finished_qps:.4f} reqs/s")
         print(f"  Input tokens per second: {average_prefill_speed:.4f} tokens/s")
         print(f"  Output tokens per second: {average_generation_speed:.4f} tokens/s")
@@ -103,6 +103,7 @@ def process_output(filename: str, **kwargs):
     print(f"Performance summary saved to {results_path}")
 
     # Save a copy of the results file to ~/srv/runner-db/
+    print(f"Saving results to ~/srv/runner-db/{filename_without_parent_or_ext}-{timestamp}.results")
     runner_db_path = os.path.expanduser("~/srv/runner-db/")
     os.makedirs(runner_db_path, exist_ok=True)
     runner_db_file = os.path.join(runner_db_path, f"{filename_without_parent_or_ext}-{timestamp}.results")
@@ -110,6 +111,7 @@ def process_output(filename: str, **kwargs):
     # Copy the contents to the new location
     with open(results_path, "r") as src, open(runner_db_file, "w") as dst:
         dst.write(src.read())
+    print(f"Results saved to ~/srv/runner-db/{filename_without_parent_or_ext}-{timestamp}.results")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
