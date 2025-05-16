@@ -47,6 +47,9 @@ Serving:
       # this will start in the `2-serving-engines/direct-production-stack/kubernetes_configurations/` directory
       # generally this will be some modification after directly helm rendering the producttion stack helm chart
     hf_token: <YOUR_HF_TOKEN>
+    modelURL: <MODEL_USED_IN_K8S_CONFIG>
+      # even though the model is hardcoded into the kubernetes config, we still need to specify it here
+      # because the workload stage requires knowledge of the modelURL to tokenize and send requests
 
   # Option 3: SGLang
   Baseline: SGLang

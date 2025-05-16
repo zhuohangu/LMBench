@@ -10,6 +10,7 @@ Serving:
   Direct-ProductionStack:
     kubernetesConfigSelection: llama8B_lmcache_basic.yaml
     hf_token: <YOUR_HF_TOKEN>
+    modelURL: meta-llama/Llama-3.1-8B-Instruct
 
 Workload:
 
