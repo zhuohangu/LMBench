@@ -34,19 +34,19 @@ Serving:
     hf_token: <YOUR_HF_TOKEN>
     maxModelLen: 16384
 
-  # Option 2: Latest-ProductionStack (Renders the latest k8s deployment directly from production-stack source code)
-  Baseline: Latest-ProductionStack # always vllm v1
-  Latest-ProductionStack:
-    useLMCache: true
-    cpuSize: 60
-    modelURL: meta-llama/Llama-3.1-70B-Instruct
-    enablePrefixCaching: false
-    replicaCount: 4 # number of replicas to run
-    numGPUs: 2 # number of GPUs per replica
-    numCPUs: 4 # number of CPUs per replica
-    tensorParallelSize: 2 # number of GPUs per replica
+  # Option 2: Direct-ProductionStack
+  # This will allow us to test various configurations using production stack directly (choosing various images of lmcache and routers):
+  # PD vs Non-PD
+  # KV Cache Aware Routing
+  # Prefix Aware Routing
+  # Layer by layer pipelining
+  # Any novel lmcache or production stack features can be tested here with their docker images
+  Baseline: Direct-ProductionStack
+  Direct-ProductionStack:
+    kubernetesConfigSelection: <NAME_OF_K8S_CONFIG_FILENAME> # please end with .yaml
+      # this will start in the `2-serving-engines/direct-production-stack/kubernetes_configurations/` directory
+      # generally this will be some modification after directly helm rendering the producttion stack helm chart
     hf_token: <YOUR_HF_TOKEN>
-    maxModelLen: 16384 # context length for the model
 
   # Option 3: SGLang
   Baseline: SGLang
