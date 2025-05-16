@@ -73,7 +73,7 @@ Workload:
   #     USE_SHAREGPT: true
 
   Mooncake:
-  - NUM_ROUNDS: 20
+  - NUM_ROUNDS: 12
     SYSTEM_PROMPT: 0
     CHAT_HISTORY: 256
     ANSWER_LEN: 20

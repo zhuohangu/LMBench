@@ -17,6 +17,16 @@ def ProcessSummary(
 ) -> str:
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
+        # Check if the DataFrame is empty
+        if df.empty:
+            print("============ Serving Benchmark Result ============")
+            print("ERROR: No successful requests completed.")
+            print("All sessions failed, likely due to context length errors.")
+            print("Please check the logs for details and consider reducing")
+            print("the context length of your input prompts.")
+            print("==================================================")
+            return buf.getvalue()
+
         if start_time is not None and end_time is not None:
             launched_queries = len(df.query(f"{start_time} <= launch_time <= {end_time}"))
             df = df.query(f"{start_time} <= finish_time <= {end_time}")
@@ -87,11 +97,13 @@ def ProcessSummary(
 
 def process_output(filename: str, **kwargs):
     df = pd.read_csv(filename)
-    summary_str = ProcessSummary(df, pending_queries=0)
 
+    # Create results file path early so we can write error messages if needed
     filename_without_parent_or_ext = os.path.splitext(os.path.basename(filename))[0]
     timestamp = datetime.now().strftime("%Y%m%d-%H%M")
     results_path = f"4-latest-results/{filename_without_parent_or_ext}-{timestamp}.results"
+
+    summary_str = ProcessSummary(df, pending_queries=0)
 
     # Read bench-spec.yaml and filter out lines with hf_token
     bench_spec_content = ""
