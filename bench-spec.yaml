@@ -18,7 +18,7 @@ Serving:
     numCPUs: 10
     tensorParallelSize: 1
     hf_token: <YOUR_HF_TOKEN>
-    maxModelLen: 16384
+    maxModelLen: 20000
 
   # Baseline: Latest-ProductionStack
   # Latest-ProductionStack:
@@ -73,11 +73,11 @@ Workload:
   #     USE_SHAREGPT: true
 
   Mooncake:
-  - NUM_ROUNDS: 12
+  - NUM_ROUNDS: 10
     SYSTEM_PROMPT: 0
     CHAT_HISTORY: 256
     ANSWER_LEN: 20
-    QPS: [1]
+    QPS: [0.5]
 
   # Agentic:
   # - NUM_USERS_WARMUP: 100
