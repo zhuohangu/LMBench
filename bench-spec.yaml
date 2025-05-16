@@ -6,45 +6,10 @@ Infrastructure:
   A100_VRAM: 40
 
 Serving:
-  # Baseline: Helm-ProductionStack
-  # Helm-ProductionStack:
-  #   vLLM-Version: 1
-  #   useLMCache: false
-  #   cpuSize: 60
-  #   modelURL: meta-llama/Llama-3.1-8B-Instruct
-  #   enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
-  #   replicaCount: 1
-  #   numGPUs: 1
-  #   numCPUs: 10
-  #   tensorParallelSize: 1
-  #   hf_token: <YOUR_HF_TOKEN>
-  #   maxModelLen: 20000
-
-  Baseline: SGLang
-  SGLang:
-    modelURL: meta-llama/Llama-3.1-8B-Instruct # specify your model
+  Baseline: Direct-ProductionStack
+  Direct-ProductionStack:
+    kubernetesConfigSelection: llama8B_lmcache_basic.yaml
     hf_token: <YOUR_HF_TOKEN>
-    replicaCount: 1 # number of replicas to run
-    numGPUs: 1 # number of GPUs per replica
-    numCPUs: 10 # number of CPUs per replica
-    requestMemory: "50Gi" # memory request per replica
-    shmSize: "20Gi" # shared memory size
-    cacheSize: "50Gi" # size of the HuggingFace cache volume
-    contextLength: 32768 # context length for the model
-    tensorParallelSize: 1 # tensor parallel size for model distribution across GPUs
-
-  # Baseline: Latest-ProductionStack
-  # Latest-ProductionStack:
-  #   useLMCache: true
-  #   cpuSize: 60
-  #   modelURL: meta-llama/Llama-3.1-70B-Instruct
-  #   enablePrefixCaching: false
-  #   replicaCount: 4
-  #   numGPUs: 2
-  #   numCPUs: 4
-  #   tensorParallelSize: 2
-  #   hf_token: <YOUR_HF_TOKEN>
-  #   maxModelLen: 16384
 
 Workload:
 
@@ -83,7 +48,7 @@ Workload:
       CHAT_HISTORY: 256
       ANSWER_LEN: 20
       QPS: [15]
-      USE_SHAREGPT: true
+      USE_SHAREGPT: false
 
   # Mooncake:
   # - NUM_ROUNDS: 10
