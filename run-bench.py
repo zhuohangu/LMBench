@@ -23,7 +23,8 @@ def read_bench_spec() -> Dict[str, Any]:
         baseline = config['Serving'].get('Baseline')
         if baseline == 'SGLang':
             print("validating hf_token for SGLang baseline")
-            hf_token = single_config.get('hf_token')
+            sglang_config = config['Serving'].get('SGLang', {})
+            hf_token = sglang_config.get('hf_token')
             if hf_token == '<YOUR_HF_TOKEN>':
                 raise ValueError("hf_token must be specified in bench-spec.yaml for SGLang baseline")
         elif baseline == 'Helm-ProductionStack':
@@ -128,8 +129,8 @@ def setup_baseline(config: Dict[str, Any]) -> None:
         MODEL_URL = model_url
         HF_TOKEN = hf_token
 
-        # TODO
-        pass
+        # Set up SGLang
+        sglang_installation(single_config)
     elif baseline == 'Helm-ProductionStack':
         KEY = 'stack'
         prodstack_config = config['Serving'].get('Helm-ProductionStack', {})
@@ -164,6 +165,123 @@ def setup_baseline(config: Dict[str, Any]) -> None:
         pass
     else:
         raise ValueError(f"Unsupported baseline: {baseline}")
+
+def sglang_installation(sglang_config: Dict[str, Any]) -> None:
+    """
+    Deploy SGLang using the configured parameters
+    """
+    base_yaml_file = Path(__file__).parent / '2-serving-engines' / 'sglang' / 'k8s-sglang-distributed-sts.yaml'
+
+    if not base_yaml_file.exists():
+        raise FileNotFoundError(f"Base YAML file not found: {base_yaml_file}")
+
+    with open(base_yaml_file, 'r') as f:
+        base_config = yaml.safe_load_all(f)
+        # Convert generator to list to allow multiple iterations
+        base_config_list = list(base_config)
+
+    updated_config_list = _override_sglang_yaml(base_config_list, sglang_config)
+
+    # dump the updated config to the latest results folder for visibility
+    output_path = Path(__file__).parent / "4-latest-results" / "generated-sglang-config.yaml"
+    with open(output_path, 'w') as out:
+        yaml.dump_all(updated_config_list, out, default_flow_style=False)
+        print(f"Generated SGLang config written to {output_path}")
+
+    # Run the sglang installation script
+    install_script = Path(__file__).parent / '2-serving-engines' / 'sglang' / 'run-sglang.sh'
+    os.chmod(install_script, 0o755)
+    print("Running SGLang install script...")
+    subprocess.run([str(install_script)], check=True)
+
+def _override_sglang_yaml(base_config_list: list, override: Dict[str, Any]) -> list:
+    """
+    Override the base SGLang YAML configuration with values from the override dict
+    """
+    # Make a deep copy to avoid modifying the original
+    updated_config_list = []
+    for doc in base_config_list:
+        updated_config_list.append(doc.copy() if doc else {})
+
+    # Find the StatefulSet document
+    for doc in updated_config_list:
+        if doc.get('kind') == 'StatefulSet':
+            # Apply overrides to the StatefulSet
+            try:
+                # Handle replicas
+                if 'replicaCount' in override:
+                    doc['spec']['replicas'] = override['replicaCount']
+
+                # Handle container configuration
+                container = doc['spec']['template']['spec']['containers'][0]
+
+                # Replace model URL placeholder
+                for i, arg in enumerate(container['args']):
+                    if arg == 'MODEL_URL_PLACEHOLDER':
+                        container['args'][i] = override.get('modelURL')
+
+                # Replace HF token
+                for env in container['env']:
+                    if env['name'] == 'HF_TOKEN':
+                        env['value'] = override.get('hf_token')
+
+                # Handle context length
+                if 'contextLength' in override:
+                    for i, arg in enumerate(container['args']):
+                        if arg == '32768' and container['args'][i-1] == '--context-length':
+                            container['args'][i] = str(override['contextLength'])
+
+                # Handle tensor parallel size
+                if 'tensorParallelSize' in override:
+                    tensor_parallel_found = False
+                    for i, arg in enumerate(container['args']):
+                        if arg == '1' and container['args'][i-1] == '--tensor-parallel-size':
+                            container['args'][i] = str(override['tensorParallelSize'])
+                            tensor_parallel_found = True
+                            break
+
+                    # If tensor parallel args don't exist, add them
+                    if not tensor_parallel_found:
+                        # Find the index after context-length
+                        for i, arg in enumerate(container['args']):
+                            if arg == '--context-length':
+                                # Add after the context length value
+                                insert_idx = i + 2
+                                container['args'].insert(insert_idx, '--tensor-parallel-size')
+                                container['args'].insert(insert_idx + 1, str(override['tensorParallelSize']))
+                                break
+
+                # Handle resources
+                if 'numGPUs' in override:
+                    container['resources']['requests']['nvidia.com/gpu'] = override['numGPUs']
+                    container['resources']['limits']['nvidia.com/gpu'] = override['numGPUs']
+
+                if 'numCPUs' in override:
+                    container['resources']['requests']['cpu'] = str(override['numCPUs'])
+                    container['resources']['limits']['cpu'] = str(override['numCPUs'])
+
+                if 'requestMemory' in override:
+                    container['resources']['requests']['memory'] = override['requestMemory']
+                    container['resources']['limits']['memory'] = override['requestMemory']
+
+                # Handle SHM size
+                for volume in doc['spec']['template']['spec']['volumes']:
+                    if volume['name'] == 'shm':
+                        if 'shmSize' in override:
+                            volume['emptyDir']['sizeLimit'] = override['shmSize']
+            except (KeyError, IndexError, TypeError) as e:
+                raise ValueError(f"Error applying overrides to StatefulSet: {e}")
+
+        # Find the PVC document
+        elif doc.get('kind') == 'PersistentVolumeClaim':
+            # Apply overrides to the PVC
+            try:
+                if 'cacheSize' in override:
+                    doc['spec']['resources']['requests']['storage'] = override['cacheSize']
+            except (KeyError, IndexError, TypeError) as e:
+                raise ValueError(f"Error applying overrides to PVC: {e}")
+
+    return updated_config_list
 
 def helm_installation(prodstack_config: Dict[str, Any]) -> None:
     """

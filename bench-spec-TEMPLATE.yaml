@@ -41,19 +41,26 @@ Serving:
     cpuSize: 60
     modelURL: meta-llama/Llama-3.1-70B-Instruct
     enablePrefixCaching: false
-    replicaCount: 4
-    numGPUs: 2
-    numCPUs: 4
-    tensorParallelSize: 2
+    replicaCount: 4 # number of replicas to run
+    numGPUs: 2 # number of GPUs per replica
+    numCPUs: 4 # number of CPUs per replica
+    tensorParallelSize: 2 # number of GPUs per replica
     hf_token: <YOUR_HF_TOKEN>
-    maxModelLen: 16384
+    maxModelLen: 16384 # context length for the model
 
   # Option 3: SGLang
   Baseline: SGLang
   SGLang:
-    modelURL: meta-llama/Llama-3.1-70B-Instruct # specify your model
+    modelURL: meta-llama/Llama-3.1-8B-Instruct # specify your model
     hf_token: <YOUR_HF_TOKEN>
-    # Coming soon...
+    replicaCount: 1 # number of replicas to run
+    numGPUs: 1 # number of GPUs per replica
+    numCPUs: 10 # number of CPUs per replica
+    requestMemory: "50Gi" # memory request per replica
+    shmSize: "20Gi" # shared memory size
+    cacheSize: "50Gi" # size of the HuggingFace cache volume
+    contextLength: 32768 # context length for the model
+    tensorParallelSize: 1 # tensor parallel size for model distribution across GPUs
 
   # Option 4: Dynamo
   Baseline: Dynamo

@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 
 # 2. run the sglang server
-kubectl apply -f k8s-sglang-service.yaml
+kubectl apply -f k8s-sglang-distributed-sts.yaml
 
 # 3. Wait until all sglang pods are ready
 echo "Waiting for all sglang pods to be ready..."
@@ -25,7 +25,7 @@ while true; do
     exit 1
   fi
 
-  kubectl get pods -o name | grep sglang-deployment | while read pod; do
+  kubectl get pods -o name | grep sglang | while read pod; do
     echo "Checking logs for $pod for CUDA OOM"
     if kubectl logs $pod --tail=50 | grep "CUDA out of memory" >/dev/null; then
       echo "❗ CUDA OOM detected in $pod"
