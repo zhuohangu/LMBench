@@ -3,6 +3,7 @@
 import yaml
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Dict, Any, Union, Optional
 import sys
@@ -315,6 +316,42 @@ def helm_installation(prodstack_config: Dict[str, Any]) -> None:
     print("Running Helm install script...")
     subprocess.run([str(install_script), str(output_path)], check=True)
 
+    # Assign deployments to appropriate node pools immediately
+    print("Assigning deployments to node pools based on type...")
+
+    # Check for router deployment
+    try:
+        # Patch router to run on CPU nodes
+        subprocess.run([
+            "kubectl", "patch", "deployment", "vllm-router-deployment",
+            "-p", '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
+        ], check=True)
+        print("✅ Router deployment assigned to cpu-pool")
+    except subprocess.CalledProcessError:
+        print("⚠️ Router deployment not found or couldn't be patched")
+
+    # Check for model serving deployments
+    try:
+        # Get all vllm deployments
+        result = subprocess.run(
+            ["kubectl", "get", "deployments", "-o", "name"],
+            capture_output=True, text=True, check=True
+        )
+        deployments = result.stdout.strip().split('\n')
+        vllm_deployments = [d for d in deployments if 'deployment-vllm' in d and d]
+
+        if vllm_deployments:
+            for deploy in vllm_deployments:
+                subprocess.run([
+                    "kubectl", "patch", deploy,
+                    "-p", '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
+                ], check=True)
+            print(f"✅ {len(vllm_deployments)} model serving deployments assigned to gpu-pool")
+        else:
+            print("⚠️ No model serving deployments found")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Error patching model deployments: {e}")
+
 def _override_yaml(base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     try:
         model_spec = base['servingEngineSpec']['modelSpec'][0]
@@ -371,6 +408,42 @@ def kubernetes_application(direct_production_stack_config: Dict[str, Any]) -> No
         print("Kubernetes deployment completed successfully")
     else:
         raise RuntimeError("Failed to deploy Kubernetes")
+
+    # Assign deployments to appropriate node pools immediately
+    print("Assigning deployments to node pools based on type...")
+
+    # Check for router deployment
+    try:
+        # Patch router to run on CPU nodes
+        subprocess.run([
+            "kubectl", "patch", "deployment", "vllm-deployment-router",
+            "-p", '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
+        ], check=True)
+        print("✅ Router deployment assigned to cpu-pool")
+    except subprocess.CalledProcessError:
+        print("⚠️ Router deployment not found or couldn't be patched")
+
+    # Check for model serving deployments
+    try:
+        # Get all vllm deployments
+        result = subprocess.run(
+            ["kubectl", "get", "deployments", "-o", "name"],
+            capture_output=True, text=True, check=True
+        )
+        deployments = result.stdout.strip().split('\n')
+        vllm_deployments = [d for d in deployments if 'deployment-vllm' in d and d]
+
+        if vllm_deployments:
+            for deploy in vllm_deployments:
+                subprocess.run([
+                    "kubectl", "patch", deploy,
+                    "-p", '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
+                ], check=True)
+            print(f"✅ {len(vllm_deployments)} model serving deployments assigned to gpu-pool")
+        else:
+            print("⚠️ No model serving deployments found")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Error patching model deployments: {e}")
 
 # 3. Run the specified workload
 def run_workload(config: Dict[str, Any]) -> None:

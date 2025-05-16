@@ -166,18 +166,6 @@ for node in $(kubectl get nodes -o name | grep cpu-pool); do
     kubectl label "$node" pool=cpu-pool
 done
 
-echo "Patching router and model serving deployments..."
-# Patch router
-kubectl patch deployment vllm-deployment-router \
-  -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
-
-# Patch all model serving deployments
-for deploy in $(kubectl get deployments -o name | grep deployment-vllm); do
-  kubectl patch "$deploy" \
-    -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
-done
-echo "Assigned router and model serving deployments to cpu and gpu pools respectively"
-
 # Apply NVIDIA device plugin
 PLUGIN_YAML_LOCAL="1-infrastructure/lmcache-gke/nvidia-device-plugin.yml"
 PLUGIN_YAML_REMOTE="https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v0.14.4/nvidia-device-plugin.yml"
@@ -189,3 +177,7 @@ else
     echo "🌐 Local file not found — using remote NVIDIA device plugin YAML from GitHub"
     kubectl apply -f "$PLUGIN_YAML_REMOTE"
 fi
+
+echo "Infrastructure setup complete! 🚀"
+echo "Node pools have been created and labeled with pool=gpu-pool and pool=cpu-pool."
+echo "Applications should be deployed to the appropriate pools in the next phase."
