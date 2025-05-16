@@ -23,8 +23,32 @@ if lsof -ti :30080 > /dev/null; then
 fi
 
 # Make sure there is no current release
+echo "Uninstalling any existing helm releases..."
 helm uninstall vllm || true
 
+# More thorough cleanup of any leftover deployments
+echo "Cleaning up any lingering deployments..."
+kubectl delete deployment -l helm-release-name=vllm --ignore-not-found=true
+# Delete any stale pods directly as well
+kubectl delete pods -l helm-release-name=vllm --ignore-not-found=true
+
+# Wait for all resources to be fully deleted
+echo "Waiting for all resources to be fully deleted..."
+while true; do
+  # Check for any remaining pods or deployments
+  PODS=$(kubectl get pods -l helm-release-name=vllm 2>/dev/null | grep -v "No resources found" || true)
+  DEPLOYMENTS=$(kubectl get deployments -l helm-release-name=vllm 2>/dev/null | grep -v "No resources found" || true)
+
+  if [ -z "$PODS" ] && [ -z "$DEPLOYMENTS" ]; then
+    echo "✅ All previous resources have been cleaned up"
+    break
+  fi
+
+  echo "⏳ Waiting for resources to be deleted..."
+  sleep 3
+done
+
+# Double check that we have no pods at all before proceeding
 while true; do
   if [ $(kubectl get pods | wc -l) -eq 0 ]; then
     break
@@ -33,6 +57,8 @@ while true; do
 done
 
 # Install the stack
+echo "Installing vLLM stack..."
+# release name is vllm
 helm install vllm vllm/vllm-stack -f "$VALUES_FILE"
 
 # PATCHING DEPLOYMENTS TO USE APPROPRIATE NODE POOLS
@@ -73,6 +99,17 @@ if [ $? -eq 0 ]; then
     fi
 else
     echo "⚠️ Error getting deployments list"
+fi
+
+# Also patch the deployment strategy to reduce max surge to 0 (create new pods only after old ones are terminated)
+echo "Patching deployment strategy to avoid creating excess pods..."
+VLLM_DEPLOYMENTS=$(kubectl get deployments -l helm-release-name=vllm -o name 2>/dev/null | grep -v 'router')
+if [ -n "$VLLM_DEPLOYMENTS" ]; then
+    echo "$VLLM_DEPLOYMENTS" | while read deploy; do
+        kubectl patch $deploy \
+            -p '{"spec": {"strategy": {"rollingUpdate": {"maxSurge": 0, "maxUnavailable": 1}}}}'
+    done
+    echo "✅ Patched deployment strategy to reduce max surge"
 fi
 
 # Wait until all vllm pods are ready

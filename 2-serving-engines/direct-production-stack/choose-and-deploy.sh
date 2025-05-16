@@ -25,6 +25,28 @@ if [ ! -f "$KUBE_CONFIG_FILE" ]; then
     exit 1
 fi
 
+# Clean up any existing deployments to avoid conflicts
+echo "Cleaning up any existing deployments..."
+kubectl delete deployment -l model=llama3 --ignore-not-found=true
+kubectl delete deployment -l environment=router --ignore-not-found=true
+kubectl delete pods -l model=llama3 --ignore-not-found=true
+kubectl delete pods -l environment=router --ignore-not-found=true
+
+# Wait for all resources to be fully deleted
+echo "Waiting for all resources to be fully deleted..."
+while true; do
+  PODS=$(kubectl get pods -l model=llama3 2>/dev/null | grep -v "No resources found" || true)
+  ROUTER_PODS=$(kubectl get pods -l environment=router 2>/dev/null | grep -v "No resources found" || true)
+
+  if [ -z "$PODS" ] && [ -z "$ROUTER_PODS" ]; then
+    echo "✅ All previous resources have been cleaned up"
+    break
+  fi
+
+  echo "⏳ Waiting for resources to be deleted..."
+  sleep 3
+done
+
 echo "Applying Kubernetes configuration: $KUBE_CONFIG_FILE"
 kubectl apply -f "$KUBE_CONFIG_FILE"
 
@@ -74,6 +96,17 @@ if [ $? -eq 0 ]; then
     fi
 else
     echo "⚠️ Error getting deployments list"
+fi
+
+# Also patch the deployment strategy to reduce max surge to 0 (create new pods only after old ones are terminated)
+echo "Patching deployment strategy to avoid creating excess pods..."
+VLLM_DEPLOYMENTS=$(kubectl get deployments -l model=llama3 -o name 2>/dev/null)
+if [ -n "$VLLM_DEPLOYMENTS" ]; then
+    echo "$VLLM_DEPLOYMENTS" | while read deploy; do
+        kubectl patch $deploy \
+            -p '{"spec": {"strategy": {"rollingUpdate": {"maxSurge": 0, "maxUnavailable": 1}}}}'
+    done
+    echo "✅ Patched deployment strategy to reduce max surge"
 fi
 
 # Wait until all pods are ready
