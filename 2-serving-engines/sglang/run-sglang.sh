@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 
 # 2. run the sglang server
-kubectl apply -f k8s-sglang-distributed-sts.yaml
+kubectl apply -f ../../4-latest-results/generated-sglang-config.yaml
 
 # 3. Wait until all sglang pods are ready
 echo "Waiting for all sglang pods to be ready..."

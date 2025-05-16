@@ -157,6 +157,7 @@ class RequestExecutor:
                     words += chunk_message
             tokens_out = tok.usage.completion_tokens
             tokens_prefill = tok.usage.prompt_tokens
+
             return Response(
                 body=words,
                 ttft=first_token_time - start_time if first_token_time is not None else 0,
@@ -184,11 +185,10 @@ class RequestExecutor:
         finish_callback: Callable[[Response], None]
         """
         messages = chat_history.get_messages_for_openai()
+
         def safe_callback(future):
             try:
                 result = future.result()
-                # Pass the result to the callback even if it's None
-                # The callback will handle the None case
                 finish_callback(result)
             except Exception as e:
                 logger.error(f"Error in callback: {e}")
@@ -221,7 +221,7 @@ class UserSession:
         self.question_ids = []
         self.finished = False
         self.prefill_only = user_config.prefill_only
-        self.request_failed = False
+        self.request_failed = False  # Flag to track if this session had request failures
 
     def _update_result(self, response: Response):
         self.prompt_lengths.append(response.prompt_tokens)

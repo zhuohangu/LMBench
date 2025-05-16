@@ -79,11 +79,11 @@ Workload:
     ANSWER_LEN: 20
     QPS: [1]
 
-  Agentic:
-  - NUM_USERS_WARMUP: 100
-    NUM_AGENTS: 10
-    NUM_ROUNDS: 10
-    SYSTEM_PROMPT: 0
-    CHAT_HISTORY: 100
-    ANSWER_LEN: 20
-    NEW_USER_INTERVALS: [1]
+  # Agentic:
+  # - NUM_USERS_WARMUP: 100
+  #   NUM_AGENTS: 10
+  #   NUM_ROUNDS: 10
+  #   SYSTEM_PROMPT: 0
+  #   CHAT_HISTORY: 100
+  #   ANSWER_LEN: 20
+  #   NEW_USER_INTERVALS: [1]
