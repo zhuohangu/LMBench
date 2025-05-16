@@ -1,9 +1,9 @@
 Infrastructure:
-  Location: NoBench # when pushing changes that should not run any workflows
+  # Location: NoBench # when pushing changes that should not run any workflows
   # Location: LocalMinikube
-  # Location: LMCacheGKE
-  # numClusterGPUs: 1
-  # A100_VRAM: 40
+  Location: LMCacheGKE
+  numClusterGPUs: 1
+  A100_VRAM: 40
 
 Serving:
   Baseline: Direct-ProductionStack
