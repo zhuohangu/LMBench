@@ -144,68 +144,75 @@ class RequestExecutor:
             start_time = time.time()
             first_token_time = None
 
-            # Make the request
-            response = await self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                stream=True,
-                max_tokens=max_tokens,
-                temperature=0.0,
-                stream_options={"include_usage": True},
-                extra_headers=extra_headers,
-            )
+            try:
+                # Make the request
+                response = await self.client.chat.completions.create(
+                    model=model,
+                    messages=messages,
+                    stream=True,
+                    max_tokens=max_tokens,
+                    temperature=0.0,
+                    stream_options={"include_usage": True},
+                    extra_headers=extra_headers,
+                )
 
-            # Process the streaming response
-            async for chunk in response:
-                if not chunk.choices:
-                    continue
+                # Process the streaming response
+                async for chunk in response:
+                    if not chunk.choices:
+                        continue
 
-                # Handle content
-                if chunk.choices[0].delta.content is not None:
-                    if first_token_time is None and chunk.choices[0].delta.content != "":
-                        first_token_time = time.time()
-                    words += chunk.choices[0].delta.content
+                    # Handle content
+                    if chunk.choices[0].delta.content is not None:
+                        if first_token_time is None and chunk.choices[0].delta.content != "":
+                            first_token_time = time.time()
+                        words += chunk.choices[0].delta.content
 
-            # Handle token counts if available
-            if hasattr(chunk, 'usage') and chunk.usage is not None:
-                tokens_out = chunk.usage.completion_tokens
-                tokens_prefill = chunk.usage.prompt_tokens
+                # Handle token counts if available
+                if hasattr(chunk, 'usage') and chunk.usage is not None:
+                    tokens_out = chunk.usage.completion_tokens
+                    tokens_prefill = chunk.usage.prompt_tokens
 
-            # If we didn't get token counts from streaming, try to get them from the final response
-            if tokens_out == 0 or tokens_prefill == 0:
-                print("No token counts from streaming, getting final response")
-                print(f"{tokens_out}, {tokens_prefill}")
-                try:
-                    final_response = await self.client.chat.completions.create(
-                        model=model,
-                        messages=messages,
-                        stream=False,
-                    )
-                    if hasattr(final_response, 'usage') and final_response.usage is not None:
-                        tokens_out = final_response.usage.completion_tokens
-                        tokens_prefill = final_response.usage.prompt_tokens
-                except Exception as e:
-                    logging.warning(f"Failed to get token counts from final response: {e}")
+                # If we didn't get token counts from streaming, try to get them from the final response
+                if tokens_out == 0 or tokens_prefill == 0:
+                    print("No token counts from streaming, getting final response")
+                    print(f"{tokens_out}, {tokens_prefill}")
+                    try:
+                        final_response = await self.client.chat.completions.create(
+                            model=model,
+                            messages=messages,
+                            stream=False,
+                        )
+                        if hasattr(final_response, 'usage') and final_response.usage is not None:
+                            tokens_out = final_response.usage.completion_tokens
+                            tokens_prefill = final_response.usage.prompt_tokens
+                    except Exception as e:
+                        logging.warning(f"Failed to get token counts from final response: {e}")
 
-            # # Calculate timing metrics
-            ttft = first_token_time - start_time if first_token_time else 0
-            generation_time = time.time() - first_token_time if first_token_time else 0
+                # # Calculate timing metrics
+                ttft = first_token_time - start_time if first_token_time else 0
+                generation_time = time.time() - first_token_time if first_token_time else 0
 
-            return Response(
-                body=words,
-                ttft=ttft,
-                generation_time=generation_time,
-                prompt_tokens=tokens_prefill,
-                generation_tokens=tokens_out,
-                launch_time=start_time,
-                finish_time=time.time(),
-                agentID=agentID,
-            )
+                return Response(
+                    body=words,
+                    ttft=ttft,
+                    generation_time=generation_time,
+                    prompt_tokens=tokens_prefill,
+                    generation_tokens=tokens_out,
+                    launch_time=start_time,
+                    finish_time=time.time(),
+                    agentID=agentID,
+                )
+            except openai.BadRequestError as e:
+                logging.warning(f"BadRequestError with model {model}: {e}")
+                return None
+            except Exception as e:
+                logging.error(f"Error during request to model {model}: {e}")
+                return None
 
         except Exception as e:
             logging.error(f"Error in _async_launch_request: {str(e)}")
             logging.error(f"Request details - model: {model}, messages: {messages}")
-            raise
+            return None
 
     def launch_request(
         self,
@@ -218,11 +225,18 @@ class RequestExecutor:
         """
         finish_callback: Callable[[Response, int], None]
         """
-        real_callback = lambda x: finish_callback(x.result(), agentID)
+        def safe_callback(future):
+            try:
+                result = future.result()
+                # The callback will handle the None case
+                finish_callback(result, agentID)
+            except Exception as e:
+                logger.error(f"Error in callback: {e}")
+
         future = asyncio.run_coroutine_threadsafe(
             self._async_launch_request(messages, max_tokens, agentID, extra_headers), self.loop
         )
-        future.add_done_callback(real_callback)
+        future.add_done_callback(safe_callback)
 
 
 class UserSession:
@@ -309,7 +323,13 @@ class UserSession:
         self.has_unfinished_request = True
         self.last_request_time = timestamp
 
-    def _on_request_finished(self, response: Response, agentID: int):
+    def _on_request_finished(self, response: Optional[Response], agentID: int):
+        if response is None:
+            logger.warning(f"User {self.user_config.user_id} request failed (likely context length exceeded)")
+            self.has_unfinished_request = False
+            self.finished = True  # Mark session as finished when request fails
+            return
+
         if self.user_config.whole_history:
             self.chat_history.on_system_response_whole(response.body, agentID)
         else:
@@ -666,7 +686,7 @@ def main():
                 f"When --trace-file is omitted, you MUST supply: {', '.join(missing)}"
             )
 
-    # From here on you know you’re in exactly one mode:
+    # From here on you know you're in exactly one mode:
     if args.trace_file:
         print("Running in trace‑mode, loading:", args.trace_file)
     else:

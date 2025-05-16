@@ -137,34 +137,41 @@ class RequestExecutor:
         start_time = time.time()
         first_token_time = None
         words = ""
-        response = await self.client.chat.completions.create(
-            messages=messages,
-            model=self.model,
-            temperature=0,
-            stream=True,
-            max_tokens=max_tokens,
-            stream_options={"include_usage": True},
-            extra_headers=extra_headers,
-        )
-        async for tok in response:
-            if not tok.choices:
-                continue
-            chunk_message = tok.choices[0].delta.content
-            if chunk_message is not None:
-                if first_token_time is None and chunk_message != "":
-                    first_token_time = time.time()
-                words += chunk_message
-        tokens_out = tok.usage.completion_tokens
-        tokens_prefill = tok.usage.prompt_tokens
-        return Response(
-            body=words,
-            ttft=first_token_time - start_time,
-            generation_time=time.time() - first_token_time,
-            prompt_tokens=tokens_prefill,
-            generation_tokens=tokens_out,
-            launch_time=start_time,
-            finish_time=time.time(),
-        )
+        try:
+            response = await self.client.chat.completions.create(
+                messages=messages,
+                model=self.model,
+                temperature=0,
+                stream=True,
+                max_tokens=max_tokens,
+                stream_options={"include_usage": True},
+                extra_headers=extra_headers,
+            )
+            async for tok in response:
+                if not tok.choices:
+                    continue
+                chunk_message = tok.choices[0].delta.content
+                if chunk_message is not None:
+                    if first_token_time is None and chunk_message != "":
+                        first_token_time = time.time()
+                    words += chunk_message
+            tokens_out = tok.usage.completion_tokens
+            tokens_prefill = tok.usage.prompt_tokens
+            return Response(
+                body=words,
+                ttft=first_token_time - start_time if first_token_time is not None else 0,
+                generation_time=time.time() - first_token_time if first_token_time is not None else 0,
+                prompt_tokens=tokens_prefill,
+                generation_tokens=tokens_out,
+                launch_time=start_time,
+                finish_time=time.time(),
+            )
+        except openai.BadRequestError as e:
+            logger.warning(f"BadRequestError: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Unexpected error in _async_launch_request: {e}")
+            return None
 
     def launch_request(
         self,
@@ -177,11 +184,19 @@ class RequestExecutor:
         finish_callback: Callable[[Response], None]
         """
         messages = chat_history.get_messages_for_openai()
-        real_callback = lambda x: finish_callback(x.result())
+        def safe_callback(future):
+            try:
+                result = future.result()
+                # Pass the result to the callback even if it's None
+                # The callback will handle the None case
+                finish_callback(result)
+            except Exception as e:
+                logger.error(f"Error in callback: {e}")
+
         future = asyncio.run_coroutine_threadsafe(
             self._async_launch_request(messages, max_tokens, extra_headers), self.loop
         )
-        future.add_done_callback(real_callback)
+        future.add_done_callback(safe_callback)
 
 
 class UserSession:
@@ -256,7 +271,13 @@ class UserSession:
         self.has_unfinished_request = True
         self.last_request_time = timestamp
 
-    def _on_request_finished(self, response: Response):
+    def _on_request_finished(self, response: Optional[Response]):
+        if response is None:
+            logger.warning(f"User {self.user_config.user_id} request failed (likely context length exceeded)")
+            self.has_unfinished_request = False
+            self.finished = True  # Mark session as finished when request fails
+            return
+
         self.chat_history.on_system_response(response.body)
         self.has_unfinished_request = False
         logger.debug(
