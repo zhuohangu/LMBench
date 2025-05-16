@@ -35,6 +35,46 @@ done
 # Install the stack
 helm install vllm vllm/vllm-stack -f "$VALUES_FILE"
 
+# PATCHING DEPLOYMENTS TO USE APPROPRIATE NODE POOLS
+echo "Assigning deployments to node pools based on type..."
+
+# Give kubernetes a moment to create the resources
+sleep 5
+
+# Check for router deployment - try multiple possible names
+echo "Patching router deployment to use CPU nodes..."
+if kubectl get deployment vllm-router-deployment &>/dev/null; then
+    kubectl patch deployment vllm-router-deployment \
+        -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
+    echo "✅ vllm-router-deployment assigned to cpu-pool"
+elif kubectl get deployment vllm-router &>/dev/null; then
+    kubectl patch deployment vllm-router \
+        -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
+    echo "✅ vllm-router assigned to cpu-pool"
+else
+    echo "⚠️ No router deployment found to patch"
+fi
+
+# Check for model serving deployments
+echo "Patching model deployments to use GPU nodes..."
+DEPLOYMENTS=$(kubectl get deployments -o name 2>/dev/null)
+if [ $? -eq 0 ]; then
+    # Find all deployments that might be vllm model deployments
+    VLLM_DEPLOYMENTS=$(echo "$DEPLOYMENTS" | grep -E 'deployment.*vllm|vllm.*deployment' | grep -v 'router')
+
+    if [ -n "$VLLM_DEPLOYMENTS" ]; then
+        echo "$VLLM_DEPLOYMENTS" | while read deploy; do
+            kubectl patch $deploy \
+                -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
+        done
+        echo "✅ Model serving deployments assigned to gpu-pool"
+    else
+        echo "⚠️ No model serving deployments found"
+    fi
+else
+    echo "⚠️ Error getting deployments list"
+fi
+
 # Wait until all vllm pods are ready
 echo "Waiting for all vLLM pods to be ready..."
 while true; do

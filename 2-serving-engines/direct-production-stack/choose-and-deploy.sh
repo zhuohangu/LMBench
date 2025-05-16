@@ -28,6 +28,54 @@ fi
 echo "Applying Kubernetes configuration: $KUBE_CONFIG_FILE"
 kubectl apply -f "$KUBE_CONFIG_FILE"
 
+# PATCHING DEPLOYMENTS TO USE APPROPRIATE NODE POOLS
+echo "Assigning deployments to node pools based on type..."
+
+# Give kubernetes a moment to create the resources
+sleep 5
+
+# Check for router deployment - using consistent name from k8s config files
+echo "Patching router deployment to use CPU nodes..."
+if kubectl get deployment vllm-deployment-router &>/dev/null; then
+    kubectl patch deployment vllm-deployment-router \
+        -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "cpu-pool"}}}}}'
+    echo "✅ vllm-deployment-router assigned to cpu-pool"
+else
+    echo "⚠️ Router deployment not found to patch"
+fi
+
+# Check for model serving deployments - using pattern from k8s config files
+echo "Patching model deployments to use GPU nodes..."
+DEPLOYMENTS=$(kubectl get deployments -o name 2>/dev/null)
+if [ $? -eq 0 ]; then
+    # Find vllm model deployments with the naming pattern used in the configs
+    VLLM_DEPLOYMENTS=$(echo "$DEPLOYMENTS" | grep 'deployment.*/vllm-.*deployment-vllm')
+
+    if [ -n "$VLLM_DEPLOYMENTS" ]; then
+        echo "$VLLM_DEPLOYMENTS" | while read deploy; do
+            kubectl patch $deploy \
+                -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
+            echo "✅ $(echo $deploy | sed 's|deployment.apps/||') assigned to gpu-pool"
+        done
+    else
+        echo "⚠️ No model serving deployments found matching pattern"
+        # Try a broader pattern as fallback
+        VLLM_DEPLOYMENTS=$(echo "$DEPLOYMENTS" | grep -v 'router')
+        if [ -n "$VLLM_DEPLOYMENTS" ]; then
+            echo "Trying with broader pattern..."
+            echo "$VLLM_DEPLOYMENTS" | while read deploy; do
+                if [[ $deploy != *"router"* ]]; then
+                    kubectl patch $deploy \
+                        -p '{"spec": {"template": {"spec": {"nodeSelector": {"pool": "gpu-pool"}}}}}'
+                    echo "✅ $(echo $deploy | sed 's|deployment.apps/||') assigned to gpu-pool"
+                fi
+            done
+        fi
+    fi
+else
+    echo "⚠️ Error getting deployments list"
+fi
+
 # Wait until all pods are ready
 echo "Waiting for all pods to be ready..."
 while true; do

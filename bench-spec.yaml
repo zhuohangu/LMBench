@@ -6,11 +6,24 @@ Infrastructure:
   A100_VRAM: 40
 
 Serving:
-  Baseline: Direct-ProductionStack
-  Direct-ProductionStack:
-    kubernetesConfigSelection: llama8B_lmcache_basic.yaml
-    hf_token: <YOUR_HF_TOKEN>
-    modelURL: meta-llama/Llama-3.1-8B-Instruct
+  # Baseline: Direct-ProductionStack
+  # Direct-ProductionStack:
+  #   kubernetesConfigSelection: llama8B_lmcache_basic.yaml
+  #   hf_token: <YOUR_HF_TOKEN>
+  #   modelURL: meta-llama/Llama-3.1-8B-Instruct
+
+  Baseline: Helm-ProductionStack
+    Helm-ProductionStack:
+      vLLM-Version: 0 # vllm v0 or v1
+      enablePrefixCaching: false # vllm v1 specific only (no prefix caching in v0)
+      useLMCache: false # true or false
+      modelURL: meta-llama/Llama-3.1-8B-Instruct
+      replicaCount: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
+      numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
+      numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
+      tensorParallelSize: 1 # please make sure tensorParallelSize <= numGPUs (this is the number of GPUs per replica)
+      hf_token: <YOUR_HF_TOKEN>
+      maxModelLen: 16384
 
 Workload:
 
