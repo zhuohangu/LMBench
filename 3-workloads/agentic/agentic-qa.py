@@ -263,6 +263,7 @@ class UserSession:
         self.inputs = []
         self.outputs = []
 
+        self.request_failed = False
 
     def _update_result(self, response: Response):
         self.prompt_lengths.append(response.prompt_tokens)
@@ -273,6 +274,9 @@ class UserSession:
         self.finish_times.append(response.finish_time)
         self.agentIDs.append(response.agentID)
         self.outputs.append(response.body)
+
+        # Only record inputs for successful responses
+        self.inputs.append(self.chat_history.get_messages_for_openai().copy())
 
     def _build_system_prompt(self):
 
@@ -312,7 +316,10 @@ class UserSession:
             f"User {self.user_config.user_id} issues request {self.question_id}"
         )
         messages = self.chat_history.get_messages_for_openai()
-        self.inputs.append(messages.copy())
+
+        # We'll save the input messages in _update_result after the request succeeds
+        # This ensures inputs only get recorded for successful requests
+
         request_executor.launch_request(
             messages,
             max_tokens,
@@ -328,6 +335,11 @@ class UserSession:
             logger.warning(f"User {self.user_config.user_id} request failed (likely context length exceeded)")
             self.has_unfinished_request = False
             self.finished = True  # Mark session as finished when request fails
+
+            # Don't add any data for failed requests - they'll be excluded from statistics
+            # Just add a flag to the session that it failed
+            self.request_failed = True
+
             return
 
         if self.user_config.whole_history:
@@ -467,7 +479,11 @@ class UserSessionManager:
                 f"active users: {len(self.sessions) - len(sessions_to_remove)}"
             )
             for session in sessions_to_remove:
-                self.session_summaries.append(session.summary())
+                if not session.request_failed and len(session.prompt_lengths) > 0:
+                    # Only add sessions with successful requests to the summary
+                    self.session_summaries.append(session.summary())
+                else:
+                    logger.info(f"Skipping failed session (user {session.user_config.user_id}) from summary")
         self.sessions = [s for s in self.sessions if not s.finished]
 
     def step(self, timestamp: float, executor: RequestExecutor):

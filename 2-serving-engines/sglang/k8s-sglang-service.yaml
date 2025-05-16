@@ -23,7 +23,12 @@ spec:
           ports:
             - containerPort: 30000
           command: ["python3", "-m", "sglang.launch_server"]
-          args: ["--model-path", "MODEL_URL_PLACEHOLDER", "--host", "0.0.0.0", "--port", "30000"]
+          args: [
+            "--model-path", "MODEL_URL_PLACEHOLDER",
+            "--host", "0.0.0.0",
+            "--port", "30000",
+            "--context-length", "32768"
+          ]
           env:
             - name: HF_TOKEN
               value: <YOUR_HF_TOKEN>
@@ -31,7 +36,7 @@ spec:
               value: /huggingface-cache
           resources:
             requests:
-              memory: "16Gi"
+              memory: "50Gi"
               nvidia.com/gpu: 1
             limits:
               nvidia.com/gpu: 1

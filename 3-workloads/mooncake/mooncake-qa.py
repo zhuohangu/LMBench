@@ -221,6 +221,7 @@ class UserSession:
         self.question_ids = []
         self.finished = False
         self.prefill_only = user_config.prefill_only
+        self.request_failed = False
 
     def _update_result(self, response: Response):
         self.prompt_lengths.append(response.prompt_tokens)
@@ -276,6 +277,10 @@ class UserSession:
             logger.warning(f"User {self.user_config.user_id} request failed (likely context length exceeded)")
             self.has_unfinished_request = False
             self.finished = True  # Mark session as finished when request fails
+
+            # Flag that this session had a failed request
+            self.request_failed = True
+
             return
 
         self.chat_history.on_system_response(response.body)
@@ -339,7 +344,11 @@ class UserSessionManager:
                 f"active users: {len(self.sessions) - len(sessions_to_remove)}"
             )
             for session in sessions_to_remove:
-                self.session_summaries.append(session.summary())
+                if not session.request_failed and len(session.prompt_lengths) > 0:
+                    # Only add sessions with successful requests to the summary
+                    self.session_summaries.append(session.summary())
+                else:
+                    logger.info(f"Skipping failed session (user {session.user_config.user_id}) from summary")
         self.sessions = [s for s in self.sessions if not s.finished]
 
     def step(self, timestamp: float, executor: RequestExecutor):

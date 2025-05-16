@@ -96,3 +96,28 @@ jobs:
         with:
           name: benchmark-results
           path: 4-latest-results/*.results
+
+  cleanup:
+    runs-on: self-hosted
+    permissions:
+      id-token: write
+      contents: read
+    if: always()
+    needs: [test-runner]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/816706432769/locations/global/workloadIdentityPools/lmbench-pool/providers/github-provider'
+          service_account: 'lmbench-runner@theta-dialect-454217-m5.iam.gserviceaccount.com'
+
+      - name: Run cleanup script
+        shell: bash
+        run: |
+          echo "Running cleanup script to ensure GKE resources are removed..."
+          chmod +x ./4-latest-results/post-processing/cleanup.sh
+          ./4-latest-results/post-processing/cleanup.sh
+          echo "✅ Cleanup completed"
