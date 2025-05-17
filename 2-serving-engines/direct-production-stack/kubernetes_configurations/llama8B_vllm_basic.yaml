@@ -36,7 +36,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 50Gi  # Default to 20Gi if not set
+      storage: 180Gi  # Default to 20Gi if not set
   selector:
     matchLabels:
         model: llama3
@@ -135,7 +135,7 @@ spec:
       serviceAccountName: vllm-router-service-account
       containers:
       - name: router-container
-        image: "lmcache/lmstack-router:latest"
+        image: "lmcache/lmstack-router:benchmark"
         imagePullPolicy: "Always"
         env:
         args:
@@ -150,7 +150,9 @@ spec:
           - "--k8s-label-selector"
           - environment=test,release=test
           - "--routing-logic"
-          - "roundrobin"
+          - "session"
+          - "--session-key"
+          - "x-user-id"
           - "--engine-stats-interval"
           - "15"
           - "--request-stats-window"
@@ -158,9 +160,9 @@ spec:
         resources:
           requests:
             cpu: "2"
-            memory: "4G"
+            memory: "8G"
           limits:
-            cpu: "4"
+            cpu: "2"
             memory: "8G"
         ports:
           - name: "router-cport"
@@ -205,14 +207,6 @@ spec:
         environment: test
         release: test
     spec:
-      initContainers:
-        - name: my-container
-          image: busybox
-          command:
-            - sh
-          volumeMounts:
-            - name: vllm-storage
-              mountPath: /data
       containers:
         - name: "vllm"
           image: "lmcache/vllm-openai:latest"
@@ -225,20 +219,19 @@ spec:
           - "0.0.0.0"
           - "--port"
           - "8000"
-          - "--no-enable-chunked-prefill"
-          - "--enable-prefix-caching"
           - "--max-model-len"
-          - "16384"
+          - "20000"
           - "--dtype"
           - "bfloat16"
-          - "--max-num-seqs"
-          - "32"
+          - "--tensor-parallel-size"
+          - "1"
           - "--gpu_memory_utilization"
           - "0.95"
           - "--max_loras"
           - "4"
           - "--disable-log-requests"
-          - "--trust-remote-code"
+          - "--swap-space"
+          - "0"
           securityContext:
             runAsNonRoot: false
           imagePullPolicy: IfNotPresent
@@ -255,7 +248,7 @@ spec:
           - name: LMCACHE_LOCAL_CPU
             value: "True"
           - name: LMCACHE_MAX_LOCAL_CPU_SIZE
-            value: "30"
+            value: "60"
           ports:
             - name: "container-port"
               containerPort: 8000
@@ -275,7 +268,7 @@ spec:
             periodSeconds: 10
           resources:
             requests:
-              memory: "60Gi"
+              memory: "50Gi"
               cpu: "10"
               nvidia.com/gpu: "1"
             limits:
@@ -283,8 +276,13 @@ spec:
           volumeMounts:
           - name: vllm-storage
             mountPath: /data
+          - name: shm
+            mountPath: /dev/shm
       volumes:
         - name: vllm-storage
           persistentVolumeClaim:
             claimName: "vllm-llama3-storage-claim"
-      runtimeClassName: nvidia
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 20Gi
