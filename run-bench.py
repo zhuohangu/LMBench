@@ -37,8 +37,11 @@ def read_bench_spec() -> Dict[str, Any]:
         elif baseline == 'Direct-ProductionStack':
             print("validating hf_token for Direct-ProductionStack baseline")
             direct_production_stack_config = config['Serving'].get('Direct-ProductionStack', {})
+            model_url = direct_production_stack_config.get('modelURL')
             hf_token = direct_production_stack_config.get('hf_token')
-            if hf_token == '<YOUR_HF_TOKEN>':
+            if not model_url:
+                raise ValueError("modelURL must be specified in bench-spec.yaml for Direct-ProductionStack baseline")
+            if not hf_token:
                 raise ValueError("hf_token must be specified in bench-spec.yaml for Direct-ProductionStack baseline")
         elif baseline == 'Dynamo':
             print("validating hf_token for Dynamo baseline")
@@ -149,7 +152,10 @@ def setup_baseline(config: Dict[str, Any]) -> None:
     elif baseline == 'Direct-ProductionStack':
         KEY = 'stack'
         direct_production_stack_config = config['Serving'].get('Direct-ProductionStack', {})
+        model_url = direct_production_stack_config.get('modelURL')
         hf_token = direct_production_stack_config.get('hf_token')
+        if not model_url:
+            raise ValueError("modelURL must be specified in bench-spec.yaml for Direct-ProductionStack baseline")
         if not hf_token:
             raise ValueError("hf_token must be specified in bench-spec.yaml for Direct-ProductionStack baseline")
         MODEL_URL = model_url
