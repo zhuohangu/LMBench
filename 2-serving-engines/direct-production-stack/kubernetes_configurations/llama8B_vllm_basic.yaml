@@ -206,7 +206,7 @@ spec:
     spec:
       containers:
         - name: "vllm"
-          image: "lmcache/vllm-openai:latest"
+          image: "lmcache/vllm-openai:2025-05-08-v1"
 
           command:
           - "vllm"
