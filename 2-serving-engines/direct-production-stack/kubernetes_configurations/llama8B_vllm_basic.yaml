@@ -278,6 +278,10 @@ spec:
             mountPath: /data
           - name: shm
             mountPath: /dev/shm
+      tolerations:
+      - key: "nvidia.com/gpu"
+        operator: "Exists"
+        effect: "NoSchedule"
       volumes:
         - name: vllm-storage
           persistentVolumeClaim:
