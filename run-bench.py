@@ -572,7 +572,7 @@ def run_synthetic(synthetic_config: Dict[str, Any]) -> None:
     SYSTEM_PROMPT=$7
     CHAT_HISTORY=$8
     ANSWER_LEN=$9
-    USE_SHAREGPT=$10
+    USE_SHAREGPT=${10}
     """
     cmd.extend([str(NUM_USERS_WARMUP)])
     cmd.extend([str(NUM_USERS)])
@@ -641,7 +641,6 @@ def run_agentic(agentic_config: Dict[str, Any]) -> None:
     SYSTEM_PROMPT=$7
     CHAT_HISTORY=$8
     ANSWER_LEN=$9
-    NEW_USER_INTERVALS=$10
     """
     NEW_USER_INTERVALS = agentic_config.get('NEW_USER_INTERVALS')
     NUM_USERS_WARMUP = agentic_config.get('NUM_USERS_WARMUP')

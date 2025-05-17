@@ -22,7 +22,7 @@ NUM_ROUNDS=$6
 SYSTEM_PROMPT=$7
 CHAT_HISTORY=$8
 ANSWER_LEN=$9
-USE_SHAREGPT=$10
+USE_SHAREGPT=${10}
 # If QPS values are provided, use them; otherwise use default
 if [ $# -gt 10 ]; then
     QPS_VALUES=("${@:11}")
