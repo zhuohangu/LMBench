@@ -37,9 +37,6 @@ spec:
   resources:
     requests:
       storage: 180Gi  # Default to 20Gi if not set
-  selector:
-    matchLabels:
-        model: llama3
 ---
 # Source: vllm-stack/templates/role.yaml
 apiVersion: rbac.authorization.k8s.io/v1
