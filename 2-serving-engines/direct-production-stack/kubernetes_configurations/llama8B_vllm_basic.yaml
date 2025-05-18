@@ -215,7 +215,7 @@ spec:
               mountPath: /data
       containers:
         - name: "vllm"
-          image: "lmcache/vllm-openai:latest"
+          image: "lmcache/vllm-openai:2025-05-05-v1"
 
           command:
           - "vllm"
