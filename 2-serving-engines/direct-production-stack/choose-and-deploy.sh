@@ -72,7 +72,7 @@ check_node_resources() {
 
   # Check if any node in the pool has enough resources
   local has_capacity=false
-  echo "$node_resources" | while read -r line; do
+  while IFS= read -r line; do
     local node_cpu=$(echo $line | awk '{print $1}')
     local node_memory=$(echo $line | awk '{print $2}')
 
@@ -84,9 +84,13 @@ check_node_resources() {
       has_capacity=true
       break
     fi
-  done
+  done < <(echo "$node_resources")
 
-  return $has_capacity
+  if [ "$has_capacity" = true ]; then
+    return 0
+  else
+    return 1
+  fi
 }
 
 # Determine which pool to use for router based on resource requirements

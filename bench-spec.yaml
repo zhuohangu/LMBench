@@ -8,8 +8,8 @@ Infrastructure:
 Serving:
   Baseline: Direct-ProductionStack
   Direct-ProductionStack:
-    kubernetesConfigSelection: llama8B_vllm_basic.yaml
-    hf_token: <YOUR_HF_TOKEN>
+    kubernetesConfigSelection: llama8B_lmcache_basic.yaml
+    hf_token: <YOUR_HF_TOKEN> # do NOT modify if you are using LMCacheGKE (keep as <YOUR_HF_TOKEN>). This is only needed for LocalMinikube
     modelURL: meta-llama/Llama-3.1-8B-Instruct
 
   # Baseline: Helm-ProductionStack
@@ -22,7 +22,7 @@ Serving:
   #   numGPUs: 1 # PLEASE make sure that replicaCount x numGPUs <= numClusterGPUs
   #   numCPUs: 4 # PLEASE look at the vCPU limits in the comment above (try to keep 12 or below)
   #   tensorParallelSize: 1 # please make sure tensorParallelSize <= numGPUs (this is the number of GPUs per replica)
-  #   hf_token: <YOUR_HF_TOKEN>
+  #   hf_token: <YOUR_HF_TOKEN> # do NOT modify if you are using LMCacheGKE (keep as <YOUR_HF_TOKEN>). This is only needed for LocalMinikube
   #   maxModelLen: 16384
 
 Workload:
